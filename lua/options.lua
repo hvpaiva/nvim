@@ -1,16 +1,18 @@
 -- [[ Setting options ]]
 -- See `:help vim.o`
--- NOTE: You can change these options as you wish!
---  For more options, you can see `:help option-list`
+-- For more options, you can see `:help option-list`
+
+-- Use a block cursor in all modes (empty disables special cursor shapes)
+vim.opt.guicursor = 'a:block'
 
 -- Make line numbers default
 vim.o.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.o.relativenumber = true
+vim.o.relativenumber = true
 
--- Enable mouse mode, can be useful for resizing splits for example!
-vim.o.mouse = 'a'
+-- Disable mouse mode!
+vim.o.mouse = ''
 
 -- Don't show the mode, since it's already in the status line
 vim.o.showmode = false
@@ -27,6 +29,8 @@ end)
 vim.o.breakindent = true
 
 -- Save undo history
+-- Directory to store undo history files
+vim.opt.undodir = os.getenv 'HOME' .. '/.vim/undodir'
 vim.o.undofile = true
 
 -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term

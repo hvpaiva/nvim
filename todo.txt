@@ -1,0 +1,3 @@
+- [ ] Melhorar o LSP
+- [ ] Integrar melhor o Telescope
+- [ ] Posso remover plugins/opts?

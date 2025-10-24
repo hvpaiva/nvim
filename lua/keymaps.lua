@@ -16,11 +16,56 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
--- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+-- In visual mode, J moves the selected block one line DOWN, keeps selection, and reindents
+vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv", { desc = 'Move block [J] down' })
+
+-- In visual mode, K moves the selected block one line UP, keeps selection, and reindents
+vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv", { desc = 'Move block [K] up' })
+
+-- Join lines but preserve cursor position by marking it and jumping back afterward
+vim.keymap.set('n', 'J', 'mzJ`z', { desc = '[J]oin lines keeping cursor' })
+
+-- Half-page down and recenter the cursor line
+vim.keymap.set('n', '<C-d>', '<C-d>zz', { desc = 'Page down and center' })
+
+-- Half-page up and recenter the cursor line
+vim.keymap.set('n', '<C-u>', '<C-u>zz', { desc = 'Page up and center' })
+
+-- Next search result, then recenter and open folds if needed
+vim.keymap.set('n', 'n', 'nzzzv', { desc = '[n]ext search result (centered)' })
+
+-- Previous search result, then recenter and open folds if needed
+vim.keymap.set('n', 'N', 'Nzzzv', { desc = 'Prev search result (centered)' })
+
+-- Reindent the paragraph text object around cursor (=ap) and return to the original line using mark 'a
+vim.keymap.set('n', '=ap', "ma=ap'a", { desc = 'Reindent [a]round [p]aragraph' })
+
+-- Paste over selection without overwriting the unnamed register (use black hole register)
+vim.keymap.set('x', '<leader>p', [["_dP]], { desc = '[p]aste without yanking' })
+
+-- Yank to the system clipboard in normal/visual modes
+vim.keymap.set({ 'n', 'v' }, '<leader>y', [["+y]], { desc = '[y]ank to system clipboard' })
+
+-- Yank the entire line to the system clipboard
+vim.keymap.set('n', '<leader>Y', [["+Y]], { desc = '[Y]ank line to system clipboard' })
+
+-- Delete to the black hole register (do not clobber the unnamed register)
+vim.keymap.set({ 'n', 'v' }, '<leader>d', '"_d', { desc = '[d]elete without yanking' })
+
+-- Make <C-c> behave like <Esc> in insert mode (exit to normal mode)
+vim.keymap.set('i', '<C-c>', '<Esc>', { desc = 'Map <C-c> as <Esc>' })
+
+-- Prepare a global, case-insensitive substitution of the WORD under cursor; leave cursor before flags to edit
+vim.keymap.set('n', '<leader>S', [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], { desc = '[S]ubstitute current word' })
+
+-- Make the current file executable (chmod +x %) without noise
+vim.keymap.set('n', '<leader>x', '<cmd>!chmod +x %<CR>', { silent = true, desc = 'Make file e[x]ecutable' })
+
+-- Disable arrow keys in normal mode
+vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
+vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
+vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
+vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
