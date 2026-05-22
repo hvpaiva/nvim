@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# Install/refresh language servers used by ~/.config/nvim.
+# Idempotent: only installs what is missing. Pass --force to reinstall all.
+# A failure in one server does not stop the others; a summary is printed at the end.
+set -uo pipefail
+
+force=${1:-}
+failed=()
+
+have() { command -v "$1" >/dev/null 2>&1; }
+say()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
+skip() { printf '\033[2m--  %s (already installed; use --force to reinstall)\033[0m\n' "$*"; }
+warn() { printf '\033[1;33m!!  %s\033[0m\n' "$*"; }
+
+run_step() {
+    local name=$1; shift
+    say "$name"
+    if ! "$@"; then
+        warn "$name failed"
+        failed+=("$name")
+    fi
+}
+
+# rust-analyzer: rustup component pairs it with the active toolchain.
+if have rustup; then
+    if [[ $force == --force ]] || ! rustup component list --installed 2>/dev/null | grep -q '^rust-analyzer'; then
+        run_step "rust-analyzer (rustup component add)" rustup component add rust-analyzer
+    else
+        skip "rust-analyzer"
+    fi
+else
+    warn "rustup missing: skipping rust-analyzer"
+fi
+
+# gopls: official install path.
+if have go; then
+    if [[ $force == --force ]] || ! have gopls; then
+        run_step "gopls (go install)" go install golang.org/x/tools/gopls@latest
+    else
+        skip "gopls"
+    fi
+else
+    warn "go missing: skipping gopls"
+fi
+
+# lua-language-server: not packaged on Ubuntu noble, so we pull the prebuilt
+# tarball from upstream and extract into ~/.local/share/lua-language-server.
+install_lua_language_server() {
+    local dest=$HOME/.local/share/lua-language-server
+    local tmp rc=0
+    tmp=$(mktemp -d) || return 1
+    curl -fsSL -o "$tmp/release.json" \
+        https://api.github.com/repos/LuaLS/lua-language-server/releases/latest \
+        || { rm -rf "$tmp"; return 1; }
+    local url
+    url=$(grep -oE '"browser_download_url":\s*"[^"]*linux-x64[^"]*\.tar\.gz"' "$tmp/release.json" \
+        | head -1 | sed -E 's/.*"(https[^"]+)"/\1/')
+    if [[ -z $url ]]; then
+        rm -rf "$tmp"
+        return 1
+    fi
+    curl -fsSL -o "$tmp/lls.tar.gz" "$url" || rc=1
+    if (( rc == 0 )); then
+        rm -rf "$dest"
+        mkdir -p "$dest"
+        tar -xzf "$tmp/lls.tar.gz" -C "$dest" || rc=1
+    fi
+    if (( rc == 0 )); then
+        ln -sf "$dest/bin/lua-language-server" "$HOME/.local/bin/lua-language-server"
+    fi
+    rm -rf "$tmp"
+    return $rc
+}
+if [[ $force == --force ]] || ! have lua-language-server; then
+    run_step "lua-language-server (GitHub release)" install_lua_language_server
+else
+    skip "lua-language-server"
+fi
+
+# marksman: prebuilt binary from GitHub releases (cargo build is very slow).
+install_marksman() {
+    local tmp rc=0
+    tmp=$(mktemp -d) || return 1
+    curl -fsSL -o "$tmp/marksman" \
+        https://github.com/artempyanykh/marksman/releases/latest/download/marksman-linux-x64 \
+        || rc=1
+    (( rc == 0 )) && install -Dm755 "$tmp/marksman" "$HOME/.local/bin/marksman" || rc=$?
+    rm -rf "$tmp"
+    return $rc
+}
+if [[ $force == --force ]] || ! have marksman; then
+    run_step "marksman (GitHub release)" install_marksman
+else
+    skip "marksman"
+fi
+
+# stylua: formatter for lua (used by conform.nvim). Prebuilt zip from upstream.
+install_stylua() {
+    local tmp rc=0
+    tmp=$(mktemp -d) || return 1
+    curl -fsSL -o "$tmp/release.json" \
+        https://api.github.com/repos/JohnnyMorganz/StyLua/releases/latest \
+        || { rm -rf "$tmp"; return 1; }
+    local url
+    url=$(grep -oE '"browser_download_url":\s*"[^"]*stylua-linux-x86_64\.zip"' "$tmp/release.json" \
+        | head -1 | sed -E 's/.*"(https[^"]+)"/\1/')
+    if [[ -z $url ]]; then
+        rm -rf "$tmp"
+        return 1
+    fi
+    curl -fsSL -o "$tmp/stylua.zip" "$url" || rc=1
+    (( rc == 0 )) && unzip -q "$tmp/stylua.zip" -d "$tmp" || rc=$?
+    (( rc == 0 )) && install -Dm755 "$tmp/stylua" "$HOME/.local/bin/stylua" || rc=$?
+    rm -rf "$tmp"
+    return $rc
+}
+if [[ $force == --force ]] || ! have stylua; then
+    run_step "stylua (GitHub release)" install_stylua
+else
+    skip "stylua"
+fi
+
+# ruby-lsp: installed via mise's `gem:` backend so it survives `mise use ruby@X`.
+# The gem binary's shebang is hardcoded to the ruby active at install time; if
+# that ruby is uninstalled later the shim breaks and we reinstall here against
+# the currently active one.
+ruby_lsp_broken=0
+if have ruby-lsp && ! ruby-lsp --version >/dev/null 2>&1; then
+    ruby_lsp_broken=1
+fi
+if have mise; then
+    if [[ $force == --force ]] || ! have ruby-lsp || (( ruby_lsp_broken )); then
+        (( ruby_lsp_broken )) && warn "ruby-lsp shim broken (host ruby gone), reinstalling"
+        run_step "ruby-lsp (mise install gem:ruby-lsp)" mise install --force gem:ruby-lsp
+        mise reshim 2>/dev/null || true
+    else
+        skip "ruby-lsp"
+    fi
+else
+    warn "mise missing: skipping ruby-lsp"
+fi
+
+echo
+if (( ${#failed[@]} == 0 )); then
+    printf '\033[1;32m==> all done\033[0m\n'
+else
+    printf '\033[1;31m==> done with %d failure(s):\033[0m\n' "${#failed[@]}"
+    for f in "${failed[@]}"; do printf '    - %s\n' "$f"; done
+    exit 1
+fi

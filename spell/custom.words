@@ -1,0 +1,35 @@
+# Custom spell wordlist. Add one word per line, lowercase preferred (Vim's
+# spell will accept Title/UPPER variants when `spelloptions` allows). Lines
+# starting with `#` are ignored by `:CustomSpellUpdate`.
+#
+# After editing this file, run `:CustomSpellUpdate` to regenerate
+# `~/.local/share/nvim/site/spell/custom.utf-8.spl`.
+
+# --- Vim / Neovim jargon -----------------------------------------------------
+augroup
+autogroup
+ftplugin
+keymap
+keymaps
+mksession
+nvim
+packadd
+runtimepath
+spelllang
+spellfile
+treesitter
+vimscript
+omnifunc
+completefunc
+
+# --- Programming shorthands --------------------------------------------------
+config
+configs
+entrypoint
+lockfile
+
+# --- Project / user ----------------------------------------------------------
+hvpaiva
+omarchy
+hyprland
+chezmoi
