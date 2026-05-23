@@ -1,5 +1,9 @@
 {
   "plugins": {
+    "VimTeacher": {
+      "rev": "ff80dbd096ac54e737f73d69abf60b0c7dc11680",
+      "src": "https://github.com/brentsec/VimTeacher"
+    },
     "conform.nvim": {
       "rev": "18aeab3d63d350dcf44d64c462cc489a3412af40",
       "src": "https://github.com/stevearc/conform.nvim"
@@ -32,6 +36,10 @@
       "rev": "dfbada1a311c4bf3369f8d5421369c9b6e8b888f",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
+    "nvim-training": {
+      "rev": "ab38d312d277fc8e1a123dd7c3b41e710f56e331",
+      "src": "https://github.com/Weyaaron/nvim-training"
+    },
     "nvim-treesitter": {
       "rev": "4916d6592ede8c07973490d9322f187e07dfefac",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter"
@@ -59,6 +67,10 @@
     "undotree": {
       "rev": "6fa6b57cda8459e1e4b2ca34df702f55242f4e4d",
       "src": "https://github.com/mbbill/undotree"
+    },
+    "vim-be-better": {
+      "rev": "60e0214598d9d0bac8253e8b53a72eace4af92d3",
+      "src": "https://github.com/szymonwilczek/vim-be-better"
     },
     "vim-be-good": {
       "rev": "0ae3de14eb8efc6effe7704b5e46495e91931cc5",

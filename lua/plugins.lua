@@ -23,7 +23,9 @@ vim.pack.add({
     "https://github.com/brenoprata10/nvim-highlight-colors",
     "https://github.com/nvim-lua/plenary.nvim",
     "https://github.com/folke/todo-comments.nvim",
-    "https://github.com/theprimeagen/vim-be-good",
+    "https://github.com/szymonwilczek/vim-be-better",
+    "https://github.com/brentsec/VimTeacher",
+    "https://github.com/Weyaaron/nvim-training",
     "https://github.com/tpope/vim-sleuth",
     "https://github.com/psliwka/vim-dirtytalk",
     "https://github.com/gthelding/monokai-pro.nvim",
@@ -92,6 +94,11 @@ require("precognition").setup({
     startVisible = false,
     showBlankVirtLine = true,
 })
+
+-- nvim-training: scheduler-driven motion drills, invoked via :Training Start.
+-- VimTeacher (`:VimTeacher`) and vim-be-better (`:VimBeBetter`) load on command
+-- without setup.
+require("nvim-training").setup({})
 
 -- vim-dirtytalk: ships wordlists for programming jargon (languages, tooling,
 -- acronyms). The plugin's own `:DirtytalkUpdate` calls `spellfile#WritableSpellDir`,

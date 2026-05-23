@@ -6,7 +6,7 @@
 -- Keymaps for these modules live in `lua/keymaps.lua`.
 
 -- mini.files: tree-style file explorer in floating panes. Icons disabled,
--- preview enabled, dotfiles hidden by default (`g.` toggles).
+-- preview enabled and widened, dotfiles hidden by default (`g.` toggles).
 local show_dotfiles = false
 local filter_hide = function(fs_entry) return not vim.startswith(fs_entry.name, ".") end
 local filter_show = function() return true end
@@ -20,7 +20,11 @@ require("mini.files").setup({
         prefix = function() return "" end,
         filter = filter_hide,
     },
-    windows = { preview = true },
+    windows = {
+        preview = true,
+        width_focus = 35,
+        width_preview = 50,
+    },
     mappings = {
         go_in        = "L",     -- open file/dir, keep explorer open
         go_in_plus   = "<CR>",  -- open file and close explorer
