@@ -16,10 +16,6 @@
       "rev": "b4e431934af1fe224a3a801f632c008278cb7628",
       "src": "https://github.com/m4xshen/hardtime.nvim"
     },
-    "mason.nvim": {
-      "rev": "cbf8d285e1462dd24acf3507817be2bbcb035919",
-      "src": "https://github.com/mason-org/mason.nvim"
-    },
     "mini.nvim": {
       "rev": "6791615e48801cbf5b2baefadcea77a7760de3f4",
       "src": "https://github.com/nvim-mini/mini.nvim"
@@ -71,10 +67,6 @@
     "vim-be-better": {
       "rev": "60e0214598d9d0bac8253e8b53a72eace4af92d3",
       "src": "https://github.com/szymonwilczek/vim-be-better"
-    },
-    "vim-be-good": {
-      "rev": "0ae3de14eb8efc6effe7704b5e46495e91931cc5",
-      "src": "https://github.com/theprimeagen/vim-be-good"
     },
     "vim-dirtytalk": {
       "rev": "aa57ba902b04341a04ff97214360f56856493583",

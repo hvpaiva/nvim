@@ -50,14 +50,30 @@ vim.cmd.colorscheme("monokai-pro")
 -- (wallpaper, blur, etc.) show through. Re-applied on every colorscheme.
 local function transparent()
     for _, group in ipairs({
-        "Normal", "NormalNC", "EndOfBuffer",
-        "SignColumn", "LineNr", "CursorLineNr", "FoldColumn", "Folded",
-        "NormalFloat", "FloatBorder", "Pmenu", "PmenuSel",
+        "Normal",
+        "NormalNC",
+        "EndOfBuffer",
+        "SignColumn",
+        "LineNr",
+        "CursorLineNr",
+        "FoldColumn",
+        "Folded",
+        "NormalFloat",
+        "FloatBorder",
+        "Pmenu",
+        "PmenuSel",
         -- Note: `MiniPickMatchCurrent` is intentionally *not* here — the
         -- current-row indicator needs a bg, otherwise the selection is invisible.
-        "MiniPickBorder", "MiniPickNormal", "MiniPickPrompt",
-        "MiniNotifyNormal", "MiniNotifyBorder", "MiniNotifyTitle",
-        "MiniFilesNormal", "MiniFilesBorder", "MiniFilesTitle", "MiniFilesTitleFocused",
+        "MiniPickBorder",
+        "MiniPickNormal",
+        "MiniPickPrompt",
+        "MiniNotifyNormal",
+        "MiniNotifyBorder",
+        "MiniNotifyTitle",
+        "MiniFilesNormal",
+        "MiniFilesBorder",
+        "MiniFilesTitle",
+        "MiniFilesTitleFocused",
     }) do
         local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
         hl.bg = "none"

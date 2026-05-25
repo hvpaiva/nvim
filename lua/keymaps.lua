@@ -52,8 +52,8 @@ vim.keymap.set("n", "<down>", '<cmd>echo "Use j to move!!"<CR>')
 -- - `<Leader>-` - open at the current file path and jump the view back to cwd
 vim.keymap.set("n", "-", "<cmd>lua MiniFiles.open()<CR>", { desc = "Open file explorer" })
 vim.keymap.set("n", "<leader>-", function()
-	MiniFiles.open(vim.api.nvim_buf_get_name(0), false)
-	MiniFiles.reveal_cwd()
+    MiniFiles.open(vim.api.nvim_buf_get_name(0), false)
+    MiniFiles.reveal_cwd()
 end, { desc = "Reveal current file in explorer" })
 
 -- Leader mappings ============================================================
@@ -63,10 +63,10 @@ end, { desc = "Reveal current file in explorer" })
 
 -- Helpers for compact declarations.
 local nmap_leader = function(suffix, rhs, desc, opts)
-	vim.keymap.set("n", "<leader>" .. suffix, rhs, vim.tbl_extend("force", { desc = desc }, opts or {}))
+    vim.keymap.set("n", "<leader>" .. suffix, rhs, vim.tbl_extend("force", { desc = desc }, opts or {}))
 end
 local xmap_leader = function(suffix, rhs, desc, opts)
-	vim.keymap.set("x", "<leader>" .. suffix, rhs, vim.tbl_extend("force", { desc = desc }, opts or {}))
+    vim.keymap.set("x", "<leader>" .. suffix, rhs, vim.tbl_extend("force", { desc = desc }, opts or {}))
 end
 
 -- Text-editing operators. Common usage:
@@ -80,40 +80,40 @@ vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]], { desc = "Delete without yank
 -- Pre-fill a global, case-insensitive substitute for the word under the cursor.
 -- Cursor lands on the replacement, ready to type the new text.
 vim.keymap.set(
-	"n",
-	"<leader>S",
-	[[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
-	{ desc = "Substitute word under cursor" }
+    "n",
+    "<leader>S",
+    [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
+    { desc = "Substitute word under cursor" }
 )
 
 -- <leader>y{scope}{obj}: yank a text object and return the cursor to where it
 -- was. `mp` drops a temporary mark, yanks, then jumps back with `` `p ``.
 -- Example: `<leader>yiw` yanks the inner word; cursor stays put.
 for _, scope in ipairs({ "i", "a" }) do
-	for _, obj in ipairs({
-		"p",
-		"s",
-		"B",
-		"w",
-		"W",
-		"(",
-		"[",
-		"{",
-		"<",
-		")",
-		"]",
-		"}",
-		">",
-		"b",
-		"`",
-		"q",
-		"?",
-		"t",
-		"f",
-		"a",
-	}) do
-		vim.keymap.set("n", "<leader>y" .. scope .. obj, "mpy" .. scope .. obj .. "`p")
-	end
+    for _, obj in ipairs({
+        "p",
+        "s",
+        "B",
+        "w",
+        "W",
+        "(",
+        "[",
+        "{",
+        "<",
+        ")",
+        "]",
+        "}",
+        ">",
+        "b",
+        "`",
+        "q",
+        "?",
+        "t",
+        "f",
+        "a",
+    }) do
+        vim.keymap.set("n", "<leader>y" .. scope .. obj, "mpy" .. scope .. obj .. "`p")
+    end
 end
 
 -- b is for 'Buffer'. Common usage:
@@ -122,7 +122,7 @@ end
 -- - `<Leader>bs` - new scratch (throwaway) buffer
 -- Uppercase `bD` / `bW` force-close buffers with unsaved changes.
 local new_scratch_buffer = function()
-	vim.api.nvim_win_set_buf(0, vim.api.nvim_create_buf(true, true))
+    vim.api.nvim_win_set_buf(0, vim.api.nvim_create_buf(true, true))
 end
 nmap_leader("ba", "<Cmd>b#<CR>", "Alternate")
 nmap_leader("bd", "<Cmd>lua MiniBufremove.delete()<CR>", "Delete")
@@ -138,10 +138,10 @@ nmap_leader("bW", "<Cmd>lua MiniBufremove.wipeout(0, true)<CR>", "Wipeout!")
 -- - `<Leader>eq` - toggle the quickfix list
 -- - `<Leader>eQ` - toggle the location list
 local toggle_quickfix = function()
-	vim.cmd(vim.fn.getqflist({ winid = true }).winid ~= 0 and "cclose" or "copen")
+    vim.cmd(vim.fn.getqflist({ winid = true }).winid ~= 0 and "cclose" or "copen")
 end
 local toggle_loclist = function()
-	vim.cmd(vim.fn.getloclist(0, { winid = true }).winid ~= 0 and "lclose" or "lopen")
+    vim.cmd(vim.fn.getloclist(0, { winid = true }).winid ~= 0 and "lclose" or "lopen")
 end
 
 nmap_leader("ed", "<Cmd>lua MiniFiles.open()<CR>", "Directory (cwd)")
@@ -217,7 +217,7 @@ nmap_leader("gv", "<cmd>Gvdiffsplit<CR>", "Visual diff split")
 -- Native LSP defaults are still available: K, grn, gra, grr, gri, gO, <C-]>.
 -- See `:h lsp-defaults`.
 local format_buffer = function()
-	require("conform").format({ async = true })
+    require("conform").format({ async = true })
 end
 nmap_leader("la", "<cmd>lua vim.lsp.buf.code_action()<CR>", "Actions")
 nmap_leader("ld", "<cmd>lua vim.diagnostic.open_float()<CR>", "Diagnostic popup")
@@ -252,7 +252,7 @@ nmap_leader("oz", "<cmd>lua MiniMisc.zoom()<CR>", "Zoom toggle")
 -- Sessions are stored under `~/.local/share/nvim/sessions/`.
 nmap_leader("sd", '<cmd>lua MiniSessions.select("delete")<CR>', "Delete")
 nmap_leader("sn", function()
-	vim.ui.input({ prompt = "Session name: " }, MiniSessions.write)
+    vim.ui.input({ prompt = "Session name: " }, MiniSessions.write)
 end, "New")
 nmap_leader("sr", '<cmd>lua MiniSessions.select("read")<CR>', "Read")
 nmap_leader("sR", "<cmd>lua MiniSessions.restart()<CR>", "Restart (keep session)")
@@ -267,11 +267,11 @@ nmap_leader("sw", "<cmd>lua MiniSessions.write()<CR>", "Write current")
 -- Differs from `fv`/`fV`: those pick from all visited paths (auto-ranked),
 -- these pick from your explicitly curated "core" shortlist.
 local make_pick_core = function(cwd, desc)
-	return function()
-		local sort_latest = MiniVisits.gen_sort.default({ recency_weight = 1 })
-		local local_opts = { cwd = cwd, filter = "core", sort = sort_latest }
-		MiniExtra.pickers.visit_paths(local_opts, { source = { name = desc } })
-	end
+    return function()
+        local sort_latest = MiniVisits.gen_sort.default({ recency_weight = 1 })
+        local local_opts = { cwd = cwd, filter = "core", sort = sort_latest }
+        MiniExtra.pickers.visit_paths(local_opts, { source = { name = desc } })
+    end
 end
 nmap_leader("vc", make_pick_core("", "Core visits (all)"), "Core visits (all)")
 nmap_leader("vC", make_pick_core(nil, "Core visits (cwd)"), "Core visits (cwd)")

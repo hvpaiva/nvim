@@ -8,8 +8,12 @@
 -- mini.files: tree-style file explorer in floating panes. Icons disabled,
 -- preview enabled and widened, dotfiles hidden by default (`g.` toggles).
 local show_dotfiles = false
-local filter_hide = function(fs_entry) return not vim.startswith(fs_entry.name, ".") end
-local filter_show = function() return true end
+local filter_hide = function(fs_entry)
+    return not vim.startswith(fs_entry.name, ".")
+end
+local filter_show = function()
+    return true
+end
 local toggle_dotfiles = function()
     show_dotfiles = not show_dotfiles
     MiniFiles.refresh({ content = { filter = show_dotfiles and filter_show or filter_hide } })
@@ -17,7 +21,9 @@ end
 
 require("mini.files").setup({
     content = {
-        prefix = function() return "" end,
+        prefix = function()
+            return ""
+        end,
         filter = filter_hide,
     },
     windows = {
@@ -26,10 +32,10 @@ require("mini.files").setup({
         width_preview = 50,
     },
     mappings = {
-        go_in        = "L",     -- open file/dir, keep explorer open
-        go_in_plus   = "<CR>",  -- open file and close explorer
-        go_out       = "-",     -- go up one level, keep columns to the right
-        go_out_plus  = "_",     -- go up one level and trim right columns
+        go_in = "L", -- open file/dir, keep explorer open
+        go_in_plus = "<CR>", -- open file and close explorer
+        go_out = "-", -- go up one level, keep columns to the right
+        go_out_plus = "_", -- go up one level and trim right columns
     },
 })
 
@@ -46,8 +52,7 @@ vim.api.nvim_create_autocmd("User", {
 vim.api.nvim_create_autocmd("User", {
     pattern = "MiniFilesBufferCreate",
     callback = function(args)
-        vim.keymap.set("n", "g.", toggle_dotfiles,
-            { buffer = args.data.buf_id, desc = "Toggle dotfiles" })
+        vim.keymap.set("n", "g.", toggle_dotfiles, { buffer = args.data.buf_id, desc = "Toggle dotfiles" })
     end,
 })
 
@@ -171,6 +176,7 @@ miniclue.setup({
         { mode = "n", keys = "<Leader>l", desc = "+Language" },
         { mode = "n", keys = "<Leader>o", desc = "+Other" },
         { mode = "n", keys = "<Leader>s", desc = "+Session" },
+        { mode = "n", keys = "<Leader>t", desc = "+Training" },
         { mode = "n", keys = "<Leader>v", desc = "+Visits" },
         { mode = "n", keys = "<Leader>y", desc = "+Yank (with cursor return)" },
         { mode = "x", keys = "<Leader>l", desc = "+Language" },

@@ -55,12 +55,22 @@ lua/options.lua      editor defaults
 lua/keymaps.lua      mappings
 lua/plugins.lua      plugin list and non-mini setup
 lua/mini.lua         mini.nvim modules
+lua/training.lua     motion training tools and coaching toggles
+lua/spell.lua        spell dictionaries and update commands
 lua/theme.lua        colorscheme and highlights
 lua/treesitter.lua   Tree-sitter setup
 lua/lsp.lua          native LSP setup
+.stylua.toml         Lua formatting policy
 scripts/             helper scripts
 snippets/            personal snippets
 spell/               spell dictionaries
 ```
 
 Most details are documented as comments next to the relevant config.
+
+## Training
+
+Training tools are installed but isolated behind `<Leader>t` so they can be kept
+without making the normal editing path noisy. `hardtime.nvim` is the only active
+coach by default; flip `training_enabled_by_default` in `lua/training.lua` when
+that is no longer useful.
