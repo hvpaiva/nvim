@@ -1,6 +1,4 @@
--- Opt into the experimental cmdline + messages UI shipped in 0.12. It moves
--- the cmdline to a centered float and routes `:messages` through the same
--- system, which lets mini.cmdline (in mini.lua) own the prompt. Underscore
+-- Opt into the experimental cmdline + messages UI shipped in 0.12. Underscore
 -- namespace = unstable API: keep this protected so a future nvim minor bump
 -- does not break startup if the API moves or disappears.
 local ok_ui2, ui2 = pcall(require, "vim._core.ui2")
