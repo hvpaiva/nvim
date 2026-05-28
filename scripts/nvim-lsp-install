@@ -120,24 +120,41 @@ else
     skip "stylua"
 fi
 
-# ruby-lsp: installed via mise's `gem:` backend so it survives `mise use ruby@X`.
-# The gem binary's shebang is hardcoded to the ruby active at install time; if
-# that ruby is uninstalled later the shim breaks and we reinstall here against
-# the currently active one.
-ruby_lsp_broken=0
-if have ruby-lsp && ! ruby-lsp --version >/dev/null 2>&1; then
-    ruby_lsp_broken=1
-fi
-if have mise; then
-    if [[ $force == --force ]] || ! have ruby-lsp || (( ruby_lsp_broken )); then
-        (( ruby_lsp_broken )) && warn "ruby-lsp shim broken (host ruby gone), reinstalling"
-        run_step "ruby-lsp (mise install gem:ruby-lsp)" mise install --force gem:ruby-lsp
+# ruby-lsp / standardrb / rubocop: installed via mise's `gem:` backend so they
+# survive `mise use ruby@X`. The gem binary's shebang is hardcoded to the ruby
+# active at install time; if that ruby is uninstalled later the shim breaks
+# and we reinstall here against the currently active one.
+install_ruby_gem() {
+    local name=$1 bin=$2 mise_pkg=$3
+    local broken=0
+    if have "$bin" && ! "$bin" --version >/dev/null 2>&1; then
+        broken=1
+    fi
+    if [[ $force == --force ]] || ! have "$bin" || (( broken )); then
+        (( broken )) && warn "$bin shim broken (host ruby gone), reinstalling"
+        run_step "$name (mise install $mise_pkg)" mise install --force "$mise_pkg"
         mise reshim 2>/dev/null || true
     else
-        skip "ruby-lsp"
+        skip "$name"
+    fi
+}
+if have mise; then
+    install_ruby_gem "ruby-lsp"   "ruby-lsp"   "gem:ruby-lsp"
+    install_ruby_gem "standardrb" "standardrb" "gem:standard"
+    install_ruby_gem "rubocop"    "rubocop"    "gem:rubocop"
+else
+    warn "mise missing: skipping ruby-lsp / standardrb / rubocop"
+fi
+
+# prettier: markdown formatter used by conform.nvim.
+if have npm; then
+    if [[ $force == --force ]] || ! have prettier; then
+        run_step "prettier (npm install -g)" npm install -g prettier
+    else
+        skip "prettier"
     fi
 else
-    warn "mise missing: skipping ruby-lsp"
+    warn "npm missing: skipping prettier"
 fi
 
 echo
