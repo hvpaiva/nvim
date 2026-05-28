@@ -52,22 +52,39 @@ vim.g.undotree_DiffpanelHeight = 12
 vim.g.undotree_DiffAutoOpen = 1
 vim.g.undotree_SetFocusWhenToggle = 1
 
--- conform.nvim: per-filetype formatters where the LSP does not format itself.
--- For LSP-formatted languages (Go, Rust, Ruby), the default falls through to
--- the LSP formatter. Formatting is manual — `<Leader>lf` from keymaps.lua.
+-- conform.nvim: per-filetype formatters. Lua + Markdown get explicit external
+-- formatters; Ruby is project-detected (Standard vs RuboCop). For Go and Rust
+-- the LSP formats and conform falls back to it via `lsp_format = "fallback"`.
+-- ruby-lsp is told not to format (see after/lsp/ruby_lsp.lua) so the choice
+-- below is the single source of truth for Ruby. Formatting is manual —
+-- `<Leader>lf` from keymaps.lua. External deps (prettier, rubocop, standardrb)
+-- are not installed by scripts/nvim-lsp-install; the project ships them.
 require("conform").setup({
     default_format_opts = { lsp_format = "fallback" },
     formatters_by_ft = {
         lua = { "stylua" },
         markdown = { "prettier" },
         ["markdown.mdx"] = { "prettier" },
-        -- Ruby: prefer Standard, fall back to RuboCop if the project ships one.
+        -- Ruby: prefer Standard if the project ships a Standard config,
+        -- then RuboCop if it ships a RuboCop config, then fall back to
+        -- Standard (matches modern Ruby ecosystem convention).
         ruby = function(bufnr)
-            local has_rubocop = vim.fs.find(
-                { ".rubocop.yml", ".rubocop_todo.yml" },
-                { upward = true, path = vim.api.nvim_buf_get_name(bufnr) }
+            local path = vim.api.nvim_buf_get_name(bufnr)
+            local has_standard = vim.fs.find(
+                { ".standard.yml", "standard.yml" },
+                { upward = true, path = path }
             )[1]
-            return has_rubocop and { "rubocop" } or { "standardrb" }
+            if has_standard then
+                return { "standardrb" }
+            end
+            local has_rubocop = vim.fs.find(
+                { ".rubocop.yml", ".rubocop_todo.yml", "rubocop.yml" },
+                { upward = true, path = path }
+            )[1]
+            if has_rubocop then
+                return { "rubocop" }
+            end
+            return { "standardrb" }
         end,
     },
 })
