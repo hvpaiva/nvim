@@ -90,8 +90,15 @@ vim.keymap.set(
 )
 
 -- <leader>y{scope}{obj}: yank a text object and return the cursor to where it
--- was. `mp` drops a temporary mark, yanks, then jumps back with `` `p ``.
+-- was. winsaveview/winrestview restores cursor + scroll without touching marks.
 -- Example: `<leader>yiw` yanks the inner word; cursor stays put.
+local function yank_textobject(scope, obj)
+    return function()
+        local view = vim.fn.winsaveview()
+        vim.cmd.normal({ "y" .. scope .. obj, bang = true })
+        vim.fn.winrestview(view)
+    end
+end
 for _, scope in ipairs({ "i", "a" }) do
     for _, obj in ipairs({
         "p",
@@ -116,7 +123,12 @@ for _, scope in ipairs({ "i", "a" }) do
         "F",
         "a",
     }) do
-        vim.keymap.set("n", "<leader>y" .. scope .. obj, "mpy" .. scope .. obj .. "`p")
+        vim.keymap.set(
+            "n",
+            "<leader>y" .. scope .. obj,
+            yank_textobject(scope, obj),
+            { desc = "Yank " .. scope .. obj .. " (keep cursor)" }
+        )
     end
 end
 
