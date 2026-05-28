@@ -93,8 +93,12 @@ vim.o.smartcase = true -- ...unless the pattern has uppercase letters
 vim.o.inccommand = "split" -- Live preview for `:s` / `:%s` in a scratch split
 vim.o.formatoptions = "rqnl1j" -- Comment editing (autocmds.lua strips `c` and `o` per filetype)
 vim.o.spelloptions = "camel" -- Treat camelCase parts as separate words for spell
-vim.o.iskeyword = "@,48-57,_,192-255,-" -- Treat `-` as part of a word
 vim.o.completeopt = "menuone,noselect,fuzzy,nosort" -- Completion menu behavior
+
+-- `iskeyword` extensions like adding `-` are filetype-local (markdown link
+-- slugs, CSS class names) — set them in after/ftplugin/{markdown,css}.lua,
+-- not here, otherwise word motions in Ruby/Lua/Rust behave incorrectly
+-- (e.g. `method-name` would count as one word).
 
 -- Pattern for the start of a numbered list (used by `gw`):
 -- one or more digits / `-` / `+` / `*`, optionally followed by `.` or `)`, then a space.

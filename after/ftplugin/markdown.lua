@@ -9,6 +9,8 @@
 vim.opt_local.spell = true
 vim.opt_local.spelllang = { "en", "pt", "programming", "custom" }
 vim.opt_local.wrap = true
+-- Slugs like `mini-files` should count as a single word for `w`/`*`/spell.
+vim.opt_local.iskeyword:append("-")
 -- `linebreak` keeps wrap from breaking mid-word; `breakindent` makes wrapped
 -- lines pick up the surrounding indent, which keeps lists and quoted blocks
 -- visually aligned in long-form writing.
