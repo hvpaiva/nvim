@@ -47,7 +47,7 @@ To install or refresh the external language tooling I use:
 ~/.config/nvim/scripts/nvim-lsp-install
 ```
 
-This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `ruby-lsp`), the Lua formatter (`stylua`), the Markdown formatter (`prettier`, via `npm`), and the Ruby formatters (`standardrb`, `rubocop`, via `mise` gem backend). Project-shipped versions (e.g. `bundle exec rubocop`) override these when present.
+This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `ruby-lsp`), the Lua formatter (`stylua`), the Markdown formatter (`prettier`, via `npm`), and the Ruby formatters (`standardrb`, `rubocop`, via `mise` gem backend). Conform picks up a project-local `node_modules/.bin/prettier` when present; the Ruby formatters always use whichever `standardrb`/`rubocop` is on `PATH`.
 
 After installing parsers and language servers, sanity-check with:
 
