@@ -77,21 +77,6 @@ require("mini.notify").setup({
     },
 })
 
--- Mirror `vim.notify` calls at WARN/ERROR into `:messages` so they survive
--- the popup auto-dismiss and can be grep'd in the message history. INFO/DEBUG
--- stay popup-only to avoid the cmdline flash on chatty events (LSP progress,
--- inlay-hint toggles, etc).
-local notify_popup = vim.notify
-vim.notify = function(msg, level, opts)
-    notify_popup(msg, level, opts)
-    if level and level >= vim.log.levels.WARN then
-        local hl = level >= vim.log.levels.ERROR and "ErrorMsg" or "WarningMsg"
-        vim.schedule(function()
-            vim.api.nvim_echo({ { tostring(msg), hl } }, true, {})
-        end)
-    end
-end
-
 -- mini.cmdline: floating cmdline with completion, autocorrection (`:W`→`:w`,
 -- `:lau`→`:lua`, etc.), and autopeek of cmdline ranges.
 require("mini.cmdline").setup()
