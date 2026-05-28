@@ -9,6 +9,12 @@
 vim.opt_local.spell = true
 vim.opt_local.spelllang = { "en", "pt", "programming", "custom" }
 vim.opt_local.wrap = true
+-- `linebreak` keeps wrap from breaking mid-word; `breakindent` makes wrapped
+-- lines pick up the surrounding indent, which keeps lists and quoted blocks
+-- visually aligned in long-form writing.
+vim.opt_local.linebreak = true
+vim.opt_local.breakindent = true
+vim.opt_local.breakindentopt = "shift:2,min:40"
 
 -- `spellfile` is the list of personal `.add` files that `zg`/`zw` write to.
 -- The numeric prefix selects the entry (1zg=en, 2zg=pt, 3zg=programming,
