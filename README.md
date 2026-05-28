@@ -47,6 +47,15 @@ To install or refresh the external language tooling I use:
 ~/.config/nvim/scripts/nvim-lsp-install
 ```
 
+This installs the language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `ruby-lsp`) and `stylua`. It does **not** install formatters that live per-project: `prettier` (Markdown), `rubocop` / `standardrb` (Ruby). Install those in the project that needs them, or globally if you prefer (`npm i -g prettier`, `gem install rubocop standard`).
+
+After installing parsers and language servers, sanity-check with:
+
+```vim
+:checkhealth nvim-treesitter
+:checkhealth vim.lsp
+```
+
 ## Structure
 
 ```text
