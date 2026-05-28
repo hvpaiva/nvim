@@ -12,16 +12,6 @@ vim.keymap.set("x", "p", [["_dP]], { desc = "Paste over selection without yankin
 vim.keymap.set("n", "[p", '<Cmd>exe "iput! " . v:register<CR>', { desc = "Paste above (linewise, indented)" })
 vim.keymap.set("n", "]p", '<Cmd>exe "iput " . v:register<CR>', { desc = "Paste below (linewise, indented)" })
 
--- Swap the current function argument with the previous / next one via
--- nvim-treesitter-textobjects' `@parameter.inner` query.
--- Example: cursor on `bb` in `foo(aa, bb, cc)`, press `<Leader>a)` → `foo(aa, cc, bb)`.
-vim.keymap.set("n", "<leader>a(", function()
-    require("nvim-treesitter-textobjects.swap").swap_previous("@parameter.inner")
-end, { desc = "Swap arg with previous" })
-vim.keymap.set("n", "<leader>a)", function()
-    require("nvim-treesitter-textobjects.swap").swap_next("@parameter.inner")
-end, { desc = "Swap arg with next" })
-
 -- In insert mode, send a real Esc so InsertLeave and abbreviations fire
 -- (default <C-c> skips them).
 vim.keymap.set("i", "<C-c>", "<Esc>", { desc = "Esc with InsertLeave" })
