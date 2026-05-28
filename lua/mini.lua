@@ -226,6 +226,18 @@ miniclue.setup({
     },
 })
 
+-- Disable mini.clue in fugitive UI buffers. mini.clue re-registers its
+-- triggers as buffer-local on `BufEnter`, which shadows fugitive's own
+-- `s`/`u`/etc. keymaps. Fugitive documents its bindings via `g?`, so the
+-- clue popup is redundant here.
+vim.api.nvim_create_autocmd("FileType", {
+    group = vim.api.nvim_create_augroup("hvpaiva-miniclue-fugitive", { clear = true }),
+    pattern = { "fugitive", "fugitiveblame" },
+    callback = function(args)
+        vim.b[args.buf].miniclue_disable = true
+    end,
+})
+
 -- mini.completion: LSP-aware popup completion. With LSP attached, shows
 -- candidates from the server; falls back to keyword completion otherwise.
 -- `process_items` strips noisy "Text" suggestions and pushes snippets last.
