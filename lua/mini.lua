@@ -190,9 +190,16 @@ miniclue.setup({
         miniclue.gen_clues.z(),
     },
     window = {
-        -- Width grows to fit the longest description so popup labels are
-        -- never clipped mid-word.
-        config = { width = "auto" },
+        -- Width fits the longest description up to 60 columns; beyond that
+        -- a single very long entry would push the popup across half the screen.
+        config = function(buf_id)
+            local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
+            local content = 0
+            for _, line in ipairs(lines) do
+                content = math.max(content, vim.fn.strdisplaywidth(line))
+            end
+            return { width = math.min(content + 1, 60) }
+        end,
     },
     triggers = {
         { mode = "n", keys = "<Leader>" },
