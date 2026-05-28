@@ -49,9 +49,9 @@ vim.api.nvim_create_autocmd("LspAttach", {
     end,
 })
 
--- Refresh code lenses on attach / save / leaving insert, so they stay
--- in sync with the current buffer state for clients that support them
--- (rust-analyzer, ruby-lsp). Without this, `<Leader>ll` has nothing to run.
+-- Refresh code lenses on attach / save / leaving insert so they stay in
+-- sync with the buffer for clients that implement textDocument/codeLens
+-- (rust-analyzer, ruby-lsp). Required for `<Leader>ll` to find lenses to run.
 vim.api.nvim_create_autocmd("LspAttach", {
     group = vim.api.nvim_create_augroup("hvpaiva-lsp-codelens", { clear = true }),
     desc = "Refresh code lenses when supported",

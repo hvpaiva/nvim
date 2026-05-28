@@ -27,7 +27,7 @@ end)
 
 vim.o.mouse = "" -- Disable mouse
 vim.o.switchbuf = "usetab" -- Reuse already opened buffers when switching
-vim.o.confirm = true -- Prompt to save unsaved buffers on `:q` / `:bd` instead of erroring
+vim.o.confirm = true -- Prompt for confirmation when an operation would fail or lose changes
 
 -- No swap or backup files; persist undo across sessions instead.
 vim.o.swapfile = false

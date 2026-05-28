@@ -13,7 +13,7 @@ vim.keymap.set("n", "[p", '<Cmd>exe "iput! " . v:register<CR>', { desc = "Paste 
 vim.keymap.set("n", "]p", '<Cmd>exe "iput " . v:register<CR>', { desc = "Paste below (linewise, indented)" })
 
 -- Swap the current function argument with the previous / next one via
--- nvim-treesitter-textobjects. Sentence motions `(` / `)` stay as built-ins.
+-- nvim-treesitter-textobjects' `@parameter.inner` query.
 -- Example: cursor on `bb` in `foo(aa, bb, cc)`, press `<Leader>a)` → `foo(aa, cc, bb)`.
 vim.keymap.set("n", "<leader>a(", function()
     require("nvim-treesitter-textobjects.swap").swap_previous("@parameter.inner")
@@ -89,8 +89,8 @@ vim.keymap.set(
     { desc = "Substitute word under cursor" }
 )
 
--- <leader>y{scope}{obj}: yank a text object and return the cursor to where it
--- was. winsaveview/winrestview restores cursor + scroll without touching marks.
+-- <leader>y{scope}{obj}: yank a text object and keep cursor + scroll where
+-- they were before the operator ran.
 -- Example: `<leader>yiw` yanks the inner word; cursor stays put.
 local function yank_textobject(scope, obj)
     return function()
