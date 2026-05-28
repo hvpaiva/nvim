@@ -107,9 +107,9 @@ require("mini.splitjoin").setup()
 -- mini.surround: sa / sd / sr / sf / sF / sh / sn.
 require("mini.surround").setup()
 
--- mini.pairs: auto-close brackets and quotes in insert AND command line modes.
 -- The command-mode pairing helps when typing `:lua expr(...)` style commands.
-require("mini.pairs").setup({ modes = { command = true } })
+-- mini.pairs: auto-close brackets and quotes in insert AND command line modes.
+require("mini.pairs").setup()
 
 -- mini.bufremove: delete/wipeout a buffer while preserving windows.
 -- Replaces vanilla `:bd`, which closes the window if it's the only one
