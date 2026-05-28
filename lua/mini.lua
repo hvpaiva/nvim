@@ -57,10 +57,22 @@ vim.api.nvim_create_autocmd("User", {
 })
 
 -- mini.notify: show only the message body (no timestamp or level prefix).
+-- The window grows to fit content; the floor below keeps short messages
+-- from collapsing narrower than the "Notifications" history title.
 require("mini.notify").setup({
     content = {
         format = function(notif)
             return notif.msg
+        end,
+    },
+    window = {
+        config = function(buf_id)
+            local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
+            local width = 20
+            for _, line in ipairs(lines) do
+                width = math.max(width, vim.fn.strdisplaywidth(line))
+            end
+            return { width = width + 2 }
         end,
     },
 })
@@ -176,6 +188,11 @@ miniclue.setup({
         miniclue.gen_clues.square_brackets(),
         miniclue.gen_clues.windows({ submode_resize = true }),
         miniclue.gen_clues.z(),
+    },
+    window = {
+        -- Width grows to fit the longest description so popup labels are
+        -- never clipped mid-word.
+        config = { width = "auto" },
     },
     triggers = {
         { mode = "n", keys = "<Leader>" },
