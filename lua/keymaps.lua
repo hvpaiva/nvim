@@ -223,30 +223,22 @@ nmap_leader("gL", git_log_buf_cmd, "Log (buf)")
 nmap_leader("go", "<cmd>lua MiniDiff.toggle_overlay()<CR>", "Toggle diff overlay")
 nmap_leader("gv", "<cmd>Gvdiffsplit<CR>", "Visual diff split")
 
--- l is for 'Language'. Common usage:
--- - `<Leader>lh` - hover (docs / signature) at cursor
--- - `<Leader>la` - LSP code actions
--- - `<Leader>lr` - rename symbol
--- - `<Leader>lf` - format buffer (or visual selection); uses `conform`
--- - `<Leader>ld` - open diagnostic popup at cursor
--- - `<Leader>ls` / `lt` - jump to source / type definition
--- Native LSP defaults are still available: K, grn, gra, grr, gri, gO, <C-]>.
--- See `:h lsp-defaults`.
-local format_buffer = function()
+-- LSP extras that do not have a Neovim default (`:h lsp-defaults`). All other
+-- LSP actions go through native keys: K, grn, gra, grr, gri, grt, gO, <C-]>,
+-- <C-w>d. Motion-based formatting works through `gq{motion}` because
+-- formatexpr is wired to conform in plugins.lua.
+-- - `gK` - signature help (pairs with K = hover)
+-- - `gl` - run code lens at cursor
+-- - `gQ` - format the whole buffer via conform (overrides Ex mode)
+vim.keymap.set("n", "gK", function()
+    vim.lsp.buf.signature_help()
+end, { desc = "Signature help" })
+vim.keymap.set("n", "gl", function()
+    vim.lsp.codelens.run()
+end, { desc = "Run code lens" })
+vim.keymap.set("n", "gQ", function()
     require("conform").format({ async = true })
-end
-nmap_leader("la", "<cmd>lua vim.lsp.buf.code_action()<CR>", "Actions")
-nmap_leader("ld", "<cmd>lua vim.diagnostic.open_float()<CR>", "Diagnostic popup")
-nmap_leader("lf", format_buffer, "Format buffer")
-nmap_leader("lh", "<cmd>lua vim.lsp.buf.hover()<CR>", "Hover")
-nmap_leader("lH", "<cmd>lua vim.lsp.buf.signature_help()<CR>", "Signature help")
-nmap_leader("li", "<cmd>lua vim.lsp.buf.implementation()<CR>", "Implementation")
-nmap_leader("ll", "<cmd>lua vim.lsp.codelens.run()<CR>", "Code lens")
-nmap_leader("lr", "<cmd>lua vim.lsp.buf.rename()<CR>", "Rename")
-nmap_leader("lR", "<cmd>lua vim.lsp.buf.references()<CR>", "References")
-nmap_leader("ls", "<cmd>lua vim.lsp.buf.definition()<CR>", "Source definition")
-nmap_leader("lt", "<cmd>lua vim.lsp.buf.type_definition()<CR>", "Type definition")
-xmap_leader("lf", format_buffer, "Format selection")
+end, { desc = "Format buffer" })
 
 -- o is for 'Other'. Common usage:
 -- - `<Leader>oz` - toggle window zoom (focus current pane fullscreen)

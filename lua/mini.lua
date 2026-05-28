@@ -164,13 +164,11 @@ miniclue.setup({
         { mode = "n", keys = "<Leader>e", desc = "+Explore/Edit" },
         { mode = "n", keys = "<Leader>f", desc = "+Find" },
         { mode = "n", keys = "<Leader>g", desc = "+Git" },
-        { mode = "n", keys = "<Leader>l", desc = "+Language" },
         { mode = "n", keys = "<Leader>o", desc = "+Other" },
         { mode = "n", keys = "<Leader>s", desc = "+Session" },
         { mode = "n", keys = "<Leader>t", desc = "+Training" },
         { mode = "n", keys = "<Leader>v", desc = "+Visits" },
         { mode = "n", keys = "<Leader>y", desc = "+Yank (with cursor return)" },
-        { mode = "x", keys = "<Leader>l", desc = "+Language" },
 
         -- Built-in clue generators for native key families.
         miniclue.gen_clues.g(),
