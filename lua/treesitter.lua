@@ -47,5 +47,16 @@ vim.api.nvim_create_autocmd("FileType", {
         end
 
         pcall(vim.treesitter.start, buf, lang)
+
+        -- Use tree-sitter folds wherever the parser is available, falling
+        -- back to the global `indent` method for filetypes without one.
+        -- Skip filetypes that already set their own foldmethod in ftplugin
+        -- (currently only markdown via after/ftplugin/markdown.lua).
+        if ft ~= "markdown" then
+            vim.api.nvim_buf_call(buf, function()
+                vim.opt_local.foldmethod = "expr"
+                vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+            end)
+        end
     end,
 })
