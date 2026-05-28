@@ -21,8 +21,9 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 -- Rebuild tree-sitter parsers after the `nvim-treesitter` plugin updates,
--- keeping parser ABI in sync with the plugin. On the `main` branch the
--- entry point is `require('nvim-treesitter').install()` (no `:TSUpdate`).
+-- keeping parser ABI in sync with the plugin. On the `main` branch
+-- `update()` (no args) rebuilds every installed parser; `install()` only
+-- adds missing ones.
 vim.api.nvim_create_autocmd("PackChanged", {
     group = vim.api.nvim_create_augroup("hvpaiva-ts-rebuild", { clear = true }),
     desc = "Rebuild TS parsers when nvim-treesitter updates",
@@ -33,7 +34,7 @@ vim.api.nvim_create_autocmd("PackChanged", {
             and ev.data.spec.name == "nvim-treesitter"
             and ev.data.kind == "update"
         then
-            require("nvim-treesitter").install()
+            require("nvim-treesitter").update()
         end
     end,
 })
