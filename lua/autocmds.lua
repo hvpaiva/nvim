@@ -38,14 +38,18 @@ vim.api.nvim_create_autocmd("PackChanged", {
     end,
 })
 
--- When an LSP attaches, bind mini.completion's LSP-aware function to the
--- buffer's `omnifunc`. We set `omnifunc` (not `completefunc`) so `<C-x><C-u>`
--- stays free, and the function is only wired where it has work to do.
+-- On LSP attach, set buffer-local options that depend on a server being
+-- present. `omnifunc` points at mini.completion's LSP function so `<C-x><C-u>`
+-- triggers LSP completion and `completefunc` stays free. `formatexpr` is
+-- reasserted because the LSP defaults set it buffer-local to
+-- `vim.lsp.formatexpr()`, which would route `gq{motion}` through the LSP
+-- instead of Conform.
 vim.api.nvim_create_autocmd("LspAttach", {
-    group = vim.api.nvim_create_augroup("hvpaiva-lsp-omnifunc", { clear = true }),
-    desc = "Set omnifunc to mini.completion's LSP function",
+    group = vim.api.nvim_create_augroup("hvpaiva-lsp-buffer-options", { clear = true }),
+    desc = "Set buffer-local options on LSP attach",
     callback = function(ev)
         vim.bo[ev.buf].omnifunc = "v:lua.MiniCompletion.completefunc_lsp"
+        vim.bo[ev.buf].formatexpr = "v:lua.require'conform'.formatexpr()"
     end,
 })
 
