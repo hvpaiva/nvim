@@ -16,7 +16,8 @@ vim.api.nvim_create_autocmd("VimEnter", {
     callback = function()
         vim.schedule(function()
             vim.api.nvim_create_user_command("DirtytalkUpdate", function()
-                local plugin_dir = vim.fn.expand("~/.local/share/nvim/site/pack/core/opt/vim-dirtytalk")
+                local data_dir = vim.fn.stdpath("data")
+                local plugin_dir = data_dir .. "/site/pack/core/opt/vim-dirtytalk"
                 local files = vim.fn.glob(plugin_dir .. "/wordlists/*.words", true, true)
                 local blacklist = vim.tbl_map(tostring, vim.g.dirtytalk_blacklist or {})
                 local words = {}
@@ -31,9 +32,14 @@ vim.api.nvim_create_autocmd("VimEnter", {
                 local tmp = vim.fn.tempname()
                 vim.fn.writefile(words, tmp)
 
-                local spell_dir = vim.fn.stdpath("data") .. "/site/spell"
+                local spell_dir = data_dir .. "/site/spell"
                 vim.fn.mkdir(spell_dir, "p")
-                vim.cmd("mkspell! " .. spell_dir .. "/programming " .. tmp)
+                vim.cmd(
+                    "mkspell! "
+                        .. vim.fn.fnameescape(spell_dir .. "/programming")
+                        .. " "
+                        .. vim.fn.fnameescape(tmp)
+                )
                 vim.fn.delete(tmp)
             end, { desc = "Compile vim-dirtytalk wordlists into programming.utf-8.spl" })
         end)
@@ -64,6 +70,8 @@ vim.api.nvim_create_user_command("CustomSpellUpdate", function()
 
     local spell_dir = vim.fn.stdpath("data") .. "/site/spell"
     vim.fn.mkdir(spell_dir, "p")
-    vim.cmd("mkspell! " .. spell_dir .. "/custom " .. tmp)
+    vim.cmd(
+        "mkspell! " .. vim.fn.fnameescape(spell_dir .. "/custom") .. " " .. vim.fn.fnameescape(tmp)
+    )
     vim.fn.delete(tmp)
 end, { desc = "Compile ~/.config/nvim/spell/custom.words into custom.utf-8.spl" })
