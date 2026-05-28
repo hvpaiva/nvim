@@ -1,7 +1,8 @@
--- Native LSP defaults in 0.11+ already provide:
---   K (hover), grn (rename), gra (code action), grr (references),
---   gri (implementation), gO (document symbol), <C-]>/<C-w>d.
--- Custom <leader>l* mappings (incl. <leader>lf for format) live in keymaps.lua.
+-- Native LSP defaults in 0.11+ provide: K (hover), grn (rename),
+-- gra (code action), grr (references), gri (implementation),
+-- gO (document symbol), <C-]>/<C-w>d. They work without shadowing now
+-- that mini.operators is gone. Convenience <leader>l* mappings (incl.
+-- <leader>lf for format) live in keymaps.lua.
 
 vim.diagnostic.config({
     severity_sort = true,

@@ -12,12 +12,15 @@ vim.keymap.set("x", "p", [["_dP]], { desc = "Paste over selection without yankin
 vim.keymap.set("n", "[p", '<Cmd>exe "iput! " . v:register<CR>', { desc = "Paste above (linewise, indented)" })
 vim.keymap.set("n", "]p", '<Cmd>exe "iput " . v:register<CR>', { desc = "Paste below (linewise, indented)" })
 
--- Swap the current function argument with the previous / next one.
--- Built from mini.operators' `gx` (exchange) and mini.ai's `a` argument
--- textobject. Overrides default sentence motions `(` and `)`.
--- Example: cursor on `bb` in `foo(aa, bb, cc)`, press `(` → `foo(bb, aa, cc)`.
-vim.keymap.set("n", "(", "gxiagxila", { remap = true, desc = "Swap arg with previous" })
-vim.keymap.set("n", ")", "gxiagxina", { remap = true, desc = "Swap arg with next" })
+-- Swap the current function argument with the previous / next one via
+-- nvim-treesitter-textobjects. Sentence motions `(` / `)` stay as built-ins.
+-- Example: cursor on `bb` in `foo(aa, bb, cc)`, press `<Leader>a)` → `foo(aa, cc, bb)`.
+vim.keymap.set("n", "<leader>a(", function()
+    require("nvim-treesitter-textobjects.swap").swap_previous("@parameter.inner")
+end, { desc = "Swap arg with previous" })
+vim.keymap.set("n", "<leader>a)", function()
+    require("nvim-treesitter-textobjects.swap").swap_next("@parameter.inner")
+end, { desc = "Swap arg with next" })
 
 -- In insert mode, send a real Esc so InsertLeave and abbreviations fire
 -- (default <C-c> skips them).
@@ -110,6 +113,7 @@ for _, scope in ipairs({ "i", "a" }) do
         "?",
         "t",
         "f",
+        "F",
         "a",
     }) do
         vim.keymap.set("n", "<leader>y" .. scope .. obj, "mpy" .. scope .. obj .. "`p")

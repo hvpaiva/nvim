@@ -88,16 +88,6 @@ require("mini.jump2d").setup()
 -- selection (visual). Dot-repeats and preserves selection in visual mode.
 require("mini.move").setup()
 
--- mini.operators: adds 5 operators on top of motions/text objects:
---   g=  evaluate (lua) and replace with output
---   gx  exchange two pieces of text
---   gm  multiply (duplicate)
---   gr  replace from register
---   gs  sort lines alphabetically
--- Caveat: `gr` shadows the LSP defaults (grn/gra/grr/gri) — use the `<leader>l*`
--- equivalents from keymaps.lua. `gx` shadows the native "open URL under cursor".
-require("mini.operators").setup()
-
 -- mini.splitjoin: `gS` toggles between joined/split forms of argument lists
 -- inside brackets. Dot-repeatable.
 require("mini.splitjoin").setup()
@@ -169,6 +159,7 @@ local miniclue = require("mini.clue")
 miniclue.setup({
     clues = {
         -- Group labels for the Leader namespace.
+        { mode = "n", keys = "<Leader>a", desc = "+Argument" },
         { mode = "n", keys = "<Leader>b", desc = "+Buffer" },
         { mode = "n", keys = "<Leader>e", desc = "+Explore/Edit" },
         { mode = "n", keys = "<Leader>f", desc = "+Find" },
