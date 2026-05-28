@@ -93,7 +93,10 @@ vim.o.smartcase = true -- ...unless the pattern has uppercase letters
 vim.o.inccommand = "split" -- Live preview for `:s` / `:%s` in a scratch split
 vim.o.formatoptions = "rqnl1j" -- Comment editing (autocmds.lua strips `c` and `o` per filetype)
 vim.o.spelloptions = "camel" -- Treat camelCase parts as separate words for spell
-vim.o.completeopt = "menuone,noselect,fuzzy,nosort" -- Completion menu behavior
+-- `noinsert` keeps the buffer text as typed while the popup is open: the
+-- first match is highlighted but not committed, so `<C-n>`/`<C-p>` move the
+-- highlight without rewriting the buffer and `<C-y>` is the only confirm.
+vim.o.completeopt = "menuone,noinsert,fuzzy,nosort"
 
 -- `iskeyword` extensions like adding `-` are filetype-local (markdown link
 -- slugs, CSS class names); set them in after/ftplugin/{markdown,css}.lua,
