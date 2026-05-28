@@ -239,6 +239,7 @@ nmap_leader("la", "<cmd>lua vim.lsp.buf.code_action()<CR>", "Actions")
 nmap_leader("ld", "<cmd>lua vim.diagnostic.open_float()<CR>", "Diagnostic popup")
 nmap_leader("lf", format_buffer, "Format buffer")
 nmap_leader("lh", "<cmd>lua vim.lsp.buf.hover()<CR>", "Hover")
+nmap_leader("lH", "<cmd>lua vim.lsp.buf.signature_help()<CR>", "Signature help")
 nmap_leader("li", "<cmd>lua vim.lsp.buf.implementation()<CR>", "Implementation")
 nmap_leader("ll", "<cmd>lua vim.lsp.codelens.run()<CR>", "Code lens")
 nmap_leader("lr", "<cmd>lua vim.lsp.buf.rename()<CR>", "Rename")
@@ -253,7 +254,14 @@ xmap_leader("lf", format_buffer, "Format selection")
 -- - `<Leader>os` - toggle spelling for the current buffer/window
 -- - `<Leader>oc` - chmod +x the current file
 -- - `<Leader>oR` - restart Neovim with the new config (`:restart`)
+local function toggle_inlay_hints()
+    local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = 0 })
+    vim.lsp.inlay_hint.enable(not enabled, { bufnr = 0 })
+    vim.notify("inlay hints " .. (not enabled and "on" or "off"))
+end
+
 nmap_leader("oc", "<cmd>!chmod +x %<CR>", "Make file executable", { silent = true })
+nmap_leader("oh", toggle_inlay_hints, "Toggle inlay hints")
 nmap_leader("oR", "<cmd>restart<cr>", "Restart Neovim")
 nmap_leader("os", "<cmd>setlocal spell!<CR>", "Toggle spelling")
 nmap_leader("ou", "<cmd>UndotreeToggle<CR>", "Toggle undotree")

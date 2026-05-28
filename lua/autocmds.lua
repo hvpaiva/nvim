@@ -48,3 +48,25 @@ vim.api.nvim_create_autocmd("LspAttach", {
         vim.bo[ev.buf].omnifunc = "v:lua.MiniCompletion.completefunc_lsp"
     end,
 })
+
+-- Refresh code lenses on attach / save / leaving insert, so they stay
+-- in sync with the current buffer state for clients that support them
+-- (rust-analyzer, ruby-lsp). Without this, `<Leader>ll` has nothing to run.
+vim.api.nvim_create_autocmd("LspAttach", {
+    group = vim.api.nvim_create_augroup("hvpaiva-lsp-codelens", { clear = true }),
+    desc = "Refresh code lenses when supported",
+    callback = function(ev)
+        local client = vim.lsp.get_client_by_id(ev.data.client_id)
+        if not client or not client:supports_method("textDocument/codeLens") then
+            return
+        end
+        vim.api.nvim_create_autocmd({ "BufEnter", "InsertLeave", "BufWritePost" }, {
+            group = vim.api.nvim_create_augroup("hvpaiva-lsp-codelens-buf-" .. ev.buf, { clear = true }),
+            buffer = ev.buf,
+            callback = function()
+                vim.lsp.codelens.refresh({ bufnr = ev.buf })
+            end,
+        })
+        vim.lsp.codelens.refresh({ bufnr = ev.buf })
+    end,
+})
