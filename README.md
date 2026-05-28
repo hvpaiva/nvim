@@ -27,7 +27,7 @@ The UI is transparent. Background colors in these screenshots come from the term
 - `ripgrep`
 - `diff`
 - A C toolchain for Tree-sitter parsers
-- Optional language tooling for the LSPs you use: `go`, `rustup`, `mise`, `prettier`, `standardrb`, `rubocop`
+- Toolchains used by the install script: `go` (gopls), `rustup` (rust-analyzer), `mise` (ruby-lsp, standardrb, rubocop), `npm` (prettier)
 
 ## Install
 

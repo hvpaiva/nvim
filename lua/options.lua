@@ -64,7 +64,7 @@ vim.o.pumborder = "single" -- Border style for the popup menu
 vim.o.pumheight = 10 -- Cap popup menu height
 vim.o.pummaxwidth = 100 -- Cap popup menu width
 vim.o.winborder = "single" -- Default border for floating windows
--- New splits land below / to the right of the focused window — matches the
+-- New splits land below / to the right of the focused window, matching the
 -- left-to-right, top-down reading order so the new pane is where the eye
 -- moves next, not behind the cursor.
 vim.o.splitbelow = true
@@ -96,7 +96,7 @@ vim.o.spelloptions = "camel" -- Treat camelCase parts as separate words for spel
 vim.o.completeopt = "menuone,noselect,fuzzy,nosort" -- Completion menu behavior
 
 -- `iskeyword` extensions like adding `-` are filetype-local (markdown link
--- slugs, CSS class names) — set them in after/ftplugin/{markdown,css}.lua,
+-- slugs, CSS class names); set them in after/ftplugin/{markdown,css}.lua,
 -- not here, otherwise word motions in Ruby/Lua/Rust behave incorrectly
 -- (e.g. `method-name` would count as one word).
 

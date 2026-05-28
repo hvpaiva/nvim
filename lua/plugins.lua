@@ -59,8 +59,9 @@ vim.g.undotree_SetFocusWhenToggle = 1
 -- ruby-lsp is told not to format (see after/lsp/ruby_lsp.lua) so the choice
 -- below is the single source of truth for Ruby. Formatting is invoked via
 -- the native `gq{motion}` operator (formatexpr wired below) and `gQ` for the
--- whole buffer (see keymaps.lua). External deps (prettier, rubocop, standardrb)
--- are not installed by scripts/nvim-lsp-install; the project ships them.
+-- whole buffer (see keymaps.lua). External tooling (prettier, rubocop,
+-- standardrb) is installed by scripts/nvim-lsp-install; project-bundled
+-- versions override these when present.
 require("conform").setup({
     default_format_opts = { lsp_format = "fallback" },
     formatters_by_ft = {
@@ -111,7 +112,7 @@ require("nvim-highlight-colors").setup({})
 require("todo-comments").setup({ signs = false })
 
 -- render-markdown.nvim: in-buffer rendering of markdown (headings, tables,
--- code blocks, callouts, checkboxes). Off by default — toggle with
+-- code blocks, callouts, checkboxes). Off by default; toggle with
 -- `<Leader>om` (keymaps.lua) when reading or reviewing.
 require("render-markdown").setup({ enabled = false })
 

@@ -1,4 +1,4 @@
--- rust-analyzer — tuned for editing Rust with mini.completion.
+-- rust-analyzer: tuned for editing Rust with mini.completion.
 
 return {
     on_attach = function(client, _)

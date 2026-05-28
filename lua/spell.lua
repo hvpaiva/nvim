@@ -46,7 +46,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
     end,
 })
 
--- :CustomSpellUpdate — compile `~/.config/nvim/spell/custom.words` (one word
+-- :CustomSpellUpdate compiles `~/.config/nvim/spell/custom.words` (one word
 -- per line, `#` comments) into `custom.utf-8.spl`. Run this after editing the
 -- wordlist; the `custom` entry in `spelllang` (see `after/ftplugin/markdown.lua`)
 -- then picks the result up on the next buffer reload.

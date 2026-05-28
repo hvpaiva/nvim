@@ -86,8 +86,8 @@ require("mini.cmdline").setup()
 -- `vagc` selects one).
 require("mini.comment").setup()
 
--- mini.jump: smarter `f`/`F`/`t`/`T` — search across lines, repeat with the
--- same key, and highlight all matches on the line until you commit a jump.
+-- mini.jump: smarter `f`/`F`/`t`/`T`. Searches across lines, repeats with the
+-- same key, and highlights all matches on the line until you commit a jump.
 require("mini.jump").setup()
 
 -- mini.jump2d: easymotion-style. `<CR>` labels every word start in the visible
@@ -107,8 +107,7 @@ require("mini.splitjoin").setup()
 -- mini.surround: sa / sd / sr / sf / sF / sh / sn.
 require("mini.surround").setup()
 
--- The command-mode pairing helps when typing `:lua expr(...)` style commands.
--- mini.pairs: auto-close brackets and quotes in insert AND command line modes.
+-- mini.pairs: auto-close brackets and quotes in insert mode.
 require("mini.pairs").setup()
 
 -- mini.bufremove: delete/wipeout a buffer while preserving windows.
@@ -159,7 +158,8 @@ mini_ai.setup({
 require("mini.align").setup()
 
 -- mini.bracketed: `[X` / `]X` family for navigating buffers, comments,
--- diagnostics, file siblings, hunks, indent, jumps, marks, quickfix, etc.
+-- conflicts, diagnostics, file siblings, indent, jumps, location list,
+-- oldfiles, quickfix, treesitter nodes, undo states, windows, and yanks.
 -- vim-unimpaired-style. See `:h MiniBracketed-actions` for the full list.
 require("mini.bracketed").setup()
 

@@ -1,4 +1,4 @@
--- Lua LSP (LuaLS) — tuned for editing Neovim config.
+-- Lua LSP (LuaLS): tuned for editing Neovim config.
 -- Source: https://github.com/LuaLS/lua-language-server
 
 return {

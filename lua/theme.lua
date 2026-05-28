@@ -62,7 +62,7 @@ local function transparent()
         "FloatBorder",
         "Pmenu",
         -- Note: `PmenuSel` and `MiniPickMatchCurrent` are intentionally *not*
-        -- listed — the current-row indicator needs a bg, otherwise the
+        -- listed; the current-row indicator needs a bg, otherwise the
         -- completion/picker selection is invisible.
         "MiniPickBorder",
         "MiniPickNormal",

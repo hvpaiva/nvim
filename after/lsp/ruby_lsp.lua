@@ -1,4 +1,4 @@
--- ruby-lsp — tuned for editing Ruby with mini.completion.
+-- ruby-lsp: tuned for editing Ruby with mini.completion.
 -- Formatting is owned by conform.nvim (standardrb / rubocop fallback);
 -- ruby-lsp itself is told to stay out of formatting to avoid ambiguity.
 

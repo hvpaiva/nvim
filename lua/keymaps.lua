@@ -51,7 +51,8 @@ end, { desc = "Reveal current file in explorer" })
 
 -- Leader mappings ============================================================
 -- Convention: <Leader>{group}{action}. First key picks a semantic group
--- (Buffer, Find, Git, Language...), second key triggers the action.
+-- (Buffer, Explore, Find, Git, Other, Session, Training, Visits, Yank),
+-- second key triggers the action.
 -- Lowercase = global/regular scope; uppercase = local/heavy variant.
 
 -- Helpers for compact declarations.

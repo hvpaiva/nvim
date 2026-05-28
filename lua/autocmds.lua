@@ -51,8 +51,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 -- Enable auto-refreshing code lenses for clients that implement
 -- textDocument/codeLens (rust-analyzer, ruby-lsp). `vim.lsp.codelens.enable`
--- manages its own refresh lifecycle, so the buffer-level autocmd plumbing
--- lives inside the API itself.
+-- handles BufEnter / InsertLeave / BufWritePost refresh internally.
 vim.api.nvim_create_autocmd("LspAttach", {
     group = vim.api.nvim_create_augroup("hvpaiva-lsp-codelens", { clear = true }),
     desc = "Enable code lenses when supported",

@@ -1,8 +1,7 @@
--- nvim-treesitter `main` branch: highlighting and folds are no longer wired
--- up by a `setup()` call. Each buffer opts in by calling `vim.treesitter.start`
--- on the right language. We do that on `FileType` for any filetype Neovim can
--- map to a parser, and `pcall` so unknown / uninstalled parsers fail silent
--- instead of throwing on every buffer open.
+-- nvim-treesitter `main` branch: highlighting and folds are opt-in per buffer
+-- via `vim.treesitter.start`. We do that on `FileType` for any filetype Neovim
+-- can map to a parser, wrapped in `pcall` so unknown or uninstalled parsers
+-- fail silent.
 local treesitter = require("nvim-treesitter")
 
 local ensure_installed = {

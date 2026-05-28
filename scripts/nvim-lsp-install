@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Install/refresh language servers used by ~/.config/nvim.
+# Install/refresh language servers and formatters used by ~/.config/nvim.
 # Idempotent: only installs what is missing. Pass --force to reinstall all.
-# A failure in one server does not stop the others; a summary is printed at the end.
+# A failure in one step does not stop the others; a summary is printed at the end.
 set -uo pipefail
 
 force=${1:-}
