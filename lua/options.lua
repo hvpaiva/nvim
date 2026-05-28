@@ -40,7 +40,10 @@ vim.opt.isfname:append("@-@") -- Treat `@` as part of filenames so `gf` works on
 vim.o.updatetime = 250 -- Faster CursorHold and swap write triggers (default 4000ms)
 
 -- UI =========================================================================
-vim.g.netrw_banner = 0 -- Hide netrw banner
+-- Disable netrw entirely; mini.files owns the file-explorer role. Has to be
+-- set before the FileExplorer autocmd registers netrw's :Explore handler.
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
 
 -- Hybrid line numbers: absolute on the current line, relative on the others.
 -- Relative numbers make `{count}j`/`{count}k` motions a glance-and-go.
