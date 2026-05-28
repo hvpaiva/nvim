@@ -28,6 +28,7 @@ vim.pack.add({
     "https://github.com/mbbill/undotree",
     "https://github.com/m4xshen/hardtime.nvim",
     "https://github.com/tris203/precognition.nvim",
+    "https://github.com/MeanderingProgrammer/render-markdown.nvim",
 })
 
 -- Interactive training games stay managed by vim.pack, but their `plugin/`
@@ -108,6 +109,11 @@ require("nvim-highlight-colors").setup({})
 -- todo-comments: highlight TODO / FIXME / HACK / NOTE / WARN in comments.
 -- Signs off so the gutter stays clean.
 require("todo-comments").setup({ signs = false })
+
+-- render-markdown.nvim: in-buffer rendering of markdown (headings, tables,
+-- code blocks, callouts, checkboxes). Off by default — toggle with
+-- `<Leader>om` (keymaps.lua) when reading or reviewing.
+require("render-markdown").setup({ enabled = false })
 
 -- ============================================================================
 -- Plugin manager commands

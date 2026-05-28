@@ -235,6 +235,8 @@ end, { desc = "Format buffer" })
 -- - `<Leader>ou` - toggle undotree.vim
 -- - `<Leader>os` - toggle spelling for the current buffer/window
 -- - `<Leader>oc` - chmod +x the current file
+-- - `<Leader>oh` - toggle LSP inlay hints in the current buffer
+-- - `<Leader>om` - toggle render-markdown in-buffer rendering
 -- - `<Leader>oR` - restart Neovim with the new config (`:restart`)
 local function toggle_inlay_hints()
     local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = 0 })
@@ -244,6 +246,7 @@ end
 
 nmap_leader("oc", "<cmd>!chmod +x %<CR>", "Make file executable", { silent = true })
 nmap_leader("oh", toggle_inlay_hints, "Toggle inlay hints")
+nmap_leader("om", "<cmd>RenderMarkdown toggle<CR>", "Toggle markdown render")
 nmap_leader("oR", "<cmd>restart<cr>", "Restart Neovim")
 nmap_leader("os", "<cmd>setlocal spell!<CR>", "Toggle spelling")
 nmap_leader("ou", "<cmd>UndotreeToggle<CR>", "Toggle undotree")
