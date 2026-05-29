@@ -24,13 +24,8 @@ require("monokai-pro").setup({
             -- `Mini*Title` groups link to `FloatTitle`, so overriding it covers
             -- mini.notify, mini.clue, mini.cmdline-peek, mini.pick prompt, and
             -- the bare `nvim_open_win({title=...})` used by MiniMisc.zoom.
-            -- mini.files defines its title directly (not via link), so it
-            -- still needs explicit overrides.
             FloatBorder = { fg = accent, bg = "none" },
             FloatTitle = { fg = accent, bg = "none" },
-            MiniFilesBorder = { fg = accent, bg = "none" },
-            MiniFilesTitle = { fg = accent, bg = "none" },
-            MiniFilesTitleFocused = { fg = accent, bg = "none", bold = true },
             MiniPickBorder = { fg = accent, bg = "none" },
             -- Highlight the characters in each result that the query matched.
             -- Default monokai-pro shade is too muted to pop on the ristretto bg.
@@ -70,10 +65,6 @@ local function transparent()
         "MiniNotifyNormal",
         "MiniNotifyBorder",
         "MiniNotifyTitle",
-        "MiniFilesNormal",
-        "MiniFilesBorder",
-        "MiniFilesTitle",
-        "MiniFilesTitleFocused",
     }) do
         local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
         hl.bg = "none"

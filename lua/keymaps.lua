@@ -40,14 +40,9 @@ vim.keymap.set("n", "<right>", '<cmd>echo "Use l to move!!"<CR>')
 vim.keymap.set("n", "<up>", '<cmd>echo "Use k to move!!"<CR>')
 vim.keymap.set("n", "<down>", '<cmd>echo "Use j to move!!"<CR>')
 
--- File explorer (mini.files). Common usage:
--- - `-`         - open the explorer at cwd
--- - `<Leader>-` - open at the current file path and jump the view back to cwd
-vim.keymap.set("n", "-", "<cmd>lua MiniFiles.open()<CR>", { desc = "Open file explorer" })
-vim.keymap.set("n", "<leader>-", function()
-    MiniFiles.open(vim.api.nvim_buf_get_name(0), false)
-    MiniFiles.reveal_cwd()
-end, { desc = "Reveal current file in explorer" })
+-- File explorer (oil.nvim, set up in plugins.lua). `-` opens the parent
+-- directory of the current file; navigate up with `-`, into dirs with `<CR>`.
+vim.keymap.set("n", "-", "<cmd>Oil<CR>", { desc = "Open parent directory" })
 
 -- Leader mappings ============================================================
 -- Convention: <Leader>{group}{action}. First key picks a semantic group
@@ -139,8 +134,7 @@ nmap_leader("bw", "<Cmd>lua MiniBufremove.wipeout()<CR>", "Wipeout")
 nmap_leader("bW", "<Cmd>lua MiniBufremove.wipeout(0, true)<CR>", "Wipeout!")
 
 -- e is for 'Explore' / 'Edit'. Common usage:
--- - `<Leader>ed` - open file explorer at cwd (same as `-`)
--- - `<Leader>ef` - open file explorer at the current file's directory
+-- - `<Leader>ed` - open file explorer (oil) at cwd (`-` opens the file's dir)
 -- - `<Leader>en` - show notification history
 -- - `<Leader>eq` - toggle the quickfix list
 -- - `<Leader>eQ` - toggle the location list
@@ -151,8 +145,7 @@ local toggle_loclist = function()
     vim.cmd(vim.fn.getloclist(0, { winid = true }).winid ~= 0 and "lclose" or "lopen")
 end
 
-nmap_leader("ed", "<Cmd>lua MiniFiles.open()<CR>", "Directory (cwd)")
-nmap_leader("ef", "<Cmd>lua MiniFiles.open(vim.api.nvim_buf_get_name(0))<CR>", "File directory")
+nmap_leader("ed", "<Cmd>Oil .<CR>", "Directory (cwd)")
 nmap_leader("en", "<Cmd>lua MiniNotify.show_history()<CR>", "Notifications")
 nmap_leader("eq", toggle_quickfix, "Quickfix list")
 nmap_leader("eQ", toggle_loclist, "Location list")

@@ -14,8 +14,6 @@ The UI is transparent. Background colors in these screenshots come from the term
 
 ![Code](imgs/code.png)
 
-![File explorer](imgs/file-explorer.png)
-
 ![LSP clue](imgs/lsp-clue.png)
 
 ![Dashboard](imgs/dasboard.png)

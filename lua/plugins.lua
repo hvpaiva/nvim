@@ -29,6 +29,7 @@ vim.pack.add({
     "https://github.com/m4xshen/hardtime.nvim",
     "https://github.com/tris203/precognition.nvim",
     "https://github.com/MeanderingProgrammer/render-markdown.nvim",
+    "https://github.com/stevearc/oil.nvim",
 })
 
 -- Interactive training games stay managed by vim.pack, but their `plugin/`
@@ -115,6 +116,14 @@ require("todo-comments").setup({ signs = false })
 -- code blocks, callouts, checkboxes). Off by default; toggle with
 -- `<Leader>om` (keymaps.lua) when reading or reviewing.
 require("render-markdown").setup({ enabled = false })
+
+-- oil.nvim: edit the filesystem like a normal buffer. `-` opens the parent
+-- directory; rename/create/delete by editing lines and `:w` to apply.
+-- `columns = {}` drops the icon column to keep the listing plain (no devicons
+-- dependency). Hidden files toggle with `g.`, preview with `<C-p>` (defaults).
+-- Opening a directory (`nvim .`, `:e somedir/`) lands in oil; see the netrw
+-- note in options.lua. Keymaps live in keymaps.lua.
+require("oil").setup({ columns = {} })
 
 -- ============================================================================
 -- Plugin manager commands

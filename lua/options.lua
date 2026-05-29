@@ -40,8 +40,9 @@ vim.opt.isfname:append("@-@") -- Treat `@` as part of filenames so `gf` works on
 vim.o.updatetime = 250 -- Faster CursorHold and swap write triggers (default 4000ms)
 
 -- UI =========================================================================
--- Disable netrw entirely; mini.files owns the file-explorer role. Has to be
--- set before the FileExplorer autocmd registers netrw's :Explore handler.
+-- Disable netrw entirely; oil.nvim owns the file-explorer role and hijacks
+-- directory buffers (`nvim .`, `:e somedir/`). Has to be set before the
+-- FileExplorer autocmd registers netrw's :Explore handler.
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
