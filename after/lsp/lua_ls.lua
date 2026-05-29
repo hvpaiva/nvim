@@ -36,9 +36,7 @@ return {
                 -- Skip submodules to avoid scanning vendored code.
                 ignoreSubmodules = true,
                 checkThirdParty = false,
-                -- Make Neovim's runtime + installed plugins known to the
-                -- server so hover and completion work on config code.
-                library = vim.api.nvim_get_runtime_file("", true),
+                -- `workspace.library` is managed by lazydev.nvim (plugins.lua).
             },
         },
     },

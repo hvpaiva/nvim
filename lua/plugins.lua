@@ -30,6 +30,7 @@ vim.pack.add({
     "https://github.com/tris203/precognition.nvim",
     "https://github.com/MeanderingProgrammer/render-markdown.nvim",
     "https://github.com/stevearc/oil.nvim",
+    "https://github.com/folke/lazydev.nvim",
 })
 
 -- Interactive training games stay managed by vim.pack, but their `plugin/`
@@ -124,6 +125,15 @@ require("render-markdown").setup({ enabled = false })
 -- Opening a directory (`nvim .`, `:e somedir/`) lands in oil; see the netrw
 -- note in options.lua. Keymaps live in keymaps.lua.
 require("oil").setup({ columns = {} })
+
+-- lazydev.nvim: manages the lua_ls `workspace.library` dynamically. Seeds it
+-- with VIMRUNTIME (the `vim.*` API) and adds a plugin's types only when a file
+-- `require`s it. The `luv` entry pulls in `vim.uv` annotations on demand.
+require("lazydev").setup({
+    library = {
+        { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+    },
+})
 
 -- ============================================================================
 -- Plugin manager commands
