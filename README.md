@@ -25,7 +25,7 @@ The UI is transparent. Background colors in these screenshots come from the term
 - `ripgrep`
 - `diff`
 - A C toolchain for Tree-sitter parsers
-- Toolchains used by the install script: `go` (gopls), `rustup` (rust-analyzer), `mise` (ruby-lsp, standardrb, rubocop), `npm` (prettier)
+- Toolchains used by the install script: `go` (gopls, shfmt, docker-language-server), `rustup` (rust-analyzer), `mise` (ruby-lsp, standardrb, rubocop), `npm` (prettier and the YAML, JSON, shell, GitHub Actions and TypeScript servers)
 
 ## Install
 
@@ -45,7 +45,7 @@ To install or refresh the external language tooling I use:
 ~/.config/nvim/scripts/nvim-lsp-install
 ```
 
-This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `ruby-lsp`), the Lua formatter (`stylua`), the Markdown formatter (`prettier`, via `npm`), and the Ruby formatters (`standardrb`, `rubocop`, via `mise` gem backend). Conform picks up a project-local `node_modules/.bin/prettier` when present; the Ruby formatters always use whichever `standardrb`/`rubocop` is on `PATH`.
+This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `ruby-lsp`, `helm_ls`, `yaml-language-server`, `vscode-json-language-server`, `bash-language-server`, `gh-actions-language-server`, `docker-language-server`, `typescript-language-server`), the Lua formatter (`stylua`), the shell formatter (`shfmt`), the Markdown formatter (`prettier`, via `npm`), and the Ruby formatters (`standardrb`, `rubocop`, via `mise` gem backend). Conform picks up a project-local `node_modules/.bin/prettier` when present; the Ruby formatters always use whichever `standardrb`/`rubocop` is on `PATH`.
 
 After installing parsers and language servers, sanity-check with:
 

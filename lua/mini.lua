@@ -59,6 +59,17 @@ require("mini.surround").setup()
 -- mini.pairs: auto-close brackets and quotes in insert mode.
 require("mini.pairs").setup()
 
+-- mini.pairs maps `<CR>` to a pairs-aware newline, which would confirm an
+-- auto-selected completion. Dismiss the popup with `<C-e>` first so `<CR>`
+-- only inserts a newline; `<C-y>` stays the way to accept.
+local cr_dismiss_pum = vim.api.nvim_replace_termcodes("<C-e>", true, true, true)
+vim.keymap.set("i", "<CR>", function()
+    if vim.fn.pumvisible() == 1 then
+        return cr_dismiss_pum .. MiniPairs.cr()
+    end
+    return MiniPairs.cr()
+end, { expr = true, replace_keycodes = false, desc = "Newline; never accept completion (use <C-y>)" })
+
 -- mini.bufremove: delete/wipeout a buffer while preserving windows.
 -- Replaces vanilla `:bd`, which closes the window if it's the only one
 -- showing the buffer.

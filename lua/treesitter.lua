@@ -9,14 +9,21 @@ local ensure_installed = {
     "css",
     "dockerfile",
     "go",
+    "gomod",
+    "gosum",
+    "gotmpl",
+    "gowork",
+    "helm",
     "html",
     "http",
     "javascript",
     "json",
+    "just",
     "lua",
     "markdown",
     "markdown_inline",
     "query",
+    "regex",
     "ruby",
     "rust",
     "toml",
@@ -28,6 +35,9 @@ local ensure_installed = {
 }
 
 treesitter.install(ensure_installed)
+
+-- Helm values files are plain YAML under a compound filetype (see options.lua).
+vim.treesitter.language.register("yaml", "yaml.helm-values")
 
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "*",

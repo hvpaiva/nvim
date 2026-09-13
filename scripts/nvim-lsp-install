@@ -43,6 +43,41 @@ else
     warn "go missing: skipping gopls"
 fi
 
+# shfmt (shell formatter, used by conform.nvim) and docker-language-server:
+# both are Go binaries with an official `go install` path.
+go_tool() {
+    local bin=$1 pkg=$2
+    if [[ $force == --force ]] || ! have "$bin"; then
+        run_step "$bin (go install)" go install "$pkg"
+    else
+        skip "$bin"
+    fi
+}
+if have go; then
+    go_tool shfmt mvdan.cc/sh/v3/cmd/shfmt@latest
+    go_tool docker-language-server github.com/docker/docker-language-server/cmd/docker-language-server@latest
+else
+    warn "go missing: skipping shfmt / docker-language-server"
+fi
+
+# helm_ls: prebuilt binary from GitHub releases. It runs yaml-language-server
+# (installed below) for the Kubernetes side of chart templates.
+install_helm_ls() {
+    local tmp rc=0
+    tmp=$(mktemp -d) || return 1
+    curl -fsSL -o "$tmp/helm_ls" \
+        https://github.com/mrjosh/helm-ls/releases/latest/download/helm_ls_linux_amd64 \
+        || rc=1
+    (( rc == 0 )) && install -Dm755 "$tmp/helm_ls" "$HOME/.local/bin/helm_ls" || rc=$?
+    rm -rf "$tmp"
+    return $rc
+}
+if [[ $force == --force ]] || ! have helm_ls; then
+    run_step "helm_ls (GitHub release)" install_helm_ls
+else
+    skip "helm_ls"
+fi
+
 # lua-language-server: not packaged on Ubuntu noble, so we pull the prebuilt
 # tarball from upstream and extract into ~/.local/share/lua-language-server.
 install_lua_language_server() {
@@ -146,15 +181,26 @@ else
     warn "mise missing: skipping ruby-lsp / standardrb / rubocop"
 fi
 
-# prettier: markdown formatter used by conform.nvim.
-if have npm; then
-    if [[ $force == --force ]] || ! have prettier; then
-        run_step "prettier (npm install -g)" npm install -g prettier
+# npm-distributed tools: prettier (markdown formatter used by conform.nvim)
+# and the language servers for YAML, JSON, shell, GitHub Actions and
+# TypeScript. `bin` is what lands on PATH; the rest is what npm installs.
+npm_tool() {
+    local bin=$1; shift
+    if [[ $force == --force ]] || ! have "$bin"; then
+        run_step "$bin (npm install -g $*)" npm install -g "$@"
     else
-        skip "prettier"
+        skip "$bin"
     fi
+}
+if have npm; then
+    npm_tool prettier prettier
+    npm_tool yaml-language-server yaml-language-server
+    npm_tool vscode-json-language-server vscode-langservers-extracted
+    npm_tool bash-language-server bash-language-server
+    npm_tool gh-actions-language-server gh-actions-language-server
+    npm_tool typescript-language-server typescript-language-server typescript
 else
-    warn "npm missing: skipping prettier"
+    warn "npm missing: skipping prettier and the npm language servers"
 fi
 
 echo

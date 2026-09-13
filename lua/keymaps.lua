@@ -3,14 +3,14 @@
 
 -- Paste in visual mode without overwriting the unnamed register with the
 -- selection that was just replaced.
-vim.keymap.set("x", "p", [["_dP]], { desc = "Paste over selection without yanking" })
+vim.keymap.set("x", "p", [["_dP]], { desc = "Paste over selection" })
 
 -- Linewise paste above / below, with indent matching the surrounding context.
 -- `:iput` is `:put` with auto-indent (`:h :iput`). Forces linewise paste even
 -- when the register is character-wise. Useful for `yiw` → `]p` to drop the
 -- word on a new line at the current indent level.
-vim.keymap.set("n", "[p", '<Cmd>exe "iput! " . v:register<CR>', { desc = "Paste above (linewise, indented)" })
-vim.keymap.set("n", "]p", '<Cmd>exe "iput " . v:register<CR>', { desc = "Paste below (linewise, indented)" })
+vim.keymap.set("n", "[p", '<Cmd>exe "iput! " . v:register<CR>', { desc = "Paste above" })
+vim.keymap.set("n", "]p", '<Cmd>exe "iput " . v:register<CR>', { desc = "Paste below" })
 
 -- In insert mode, send a real Esc so InsertLeave and abbreviations fire
 -- (default <C-c> skips them).
@@ -33,12 +33,6 @@ vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Half page up, recentered" })
 -- Jump to next / previous search hit, recenter and open any fold around it.
 vim.keymap.set("n", "n", "nzzzv", { desc = "Next search hit, recentered" })
 vim.keymap.set("n", "N", "Nzzzv", { desc = "Prev search hit, recentered" })
-
--- Disable arrow keys in normal mode to enforce hjkl muscle memory.
-vim.keymap.set("n", "<left>", '<cmd>echo "Use h to move!!"<CR>')
-vim.keymap.set("n", "<right>", '<cmd>echo "Use l to move!!"<CR>')
-vim.keymap.set("n", "<up>", '<cmd>echo "Use k to move!!"<CR>')
-vim.keymap.set("n", "<down>", '<cmd>echo "Use j to move!!"<CR>')
 
 -- File explorer (oil.nvim, set up in plugins.lua). `-` opens the parent
 -- directory of the current file; navigate up with `-`, into dirs with `<CR>`.
@@ -113,7 +107,7 @@ for _, scope in ipairs({ "i", "a" }) do
             "n",
             "<leader>y" .. scope .. obj,
             yank_textobject(scope, obj),
-            { desc = "Yank " .. scope .. obj .. " (keep cursor)" }
+            { desc = "Yank " .. scope .. obj }
         )
     end
 end

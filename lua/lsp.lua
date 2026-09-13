@@ -30,4 +30,11 @@ vim.lsp.enable({
     "gopls",
     "rust_analyzer",
     "ruby_lsp",
+    "helm_ls",
+    "yamlls",
+    "jsonls",
+    "bashls",
+    "gh_actions_ls",
+    "docker_language_server",
+    "ts_ls",
 })

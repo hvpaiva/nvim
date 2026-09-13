@@ -77,6 +77,22 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     callback = transparent,
 })
 
+-- mini.snippets marks every tabstop with a double underline by default. Keep a
+-- faint background on the current tabstop and clear the rest. Reapplied on
+-- `ColorScheme` since mini.snippets re-asserts its defaults there.
+local function snippet_hl()
+    vim.api.nvim_set_hl(0, "MiniSnippetsCurrent", { bg = "#403838" })
+    vim.api.nvim_set_hl(0, "MiniSnippetsCurrentReplace", { bg = "#4a3636" })
+    vim.api.nvim_set_hl(0, "MiniSnippetsVisited", {})
+    vim.api.nvim_set_hl(0, "MiniSnippetsUnvisited", {})
+    vim.api.nvim_set_hl(0, "MiniSnippetsFinal", {})
+end
+snippet_hl()
+vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("hvpaiva-snippet-hl", { clear = true }),
+    callback = snippet_hl,
+})
+
 -- Colorize the `--MODE--` indicator in the cmdline (showmode) per mode.
 -- The default `ModeMsg` highlight is a flat gray; we rewrite it on every
 -- `ModeChanged` so Insert/Visual/Replace etc. each get a distinct color.

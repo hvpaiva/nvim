@@ -8,6 +8,28 @@ vim.g.loaded_perl_provider = 0
 vim.g.loaded_python3_provider = 0
 vim.g.loaded_ruby_provider = 0
 
+-- Helm charts: Neovim has no detection for them, so templates open as `yaml`
+-- (whose parser chokes on `{{ }}`) and `_helpers.tpl` as `smarty`. Anything
+-- under a chart's `templates/` becomes `helm`, and the values files next to
+-- `Chart.yaml` become `yaml.helm-values` so helm_ls can complete `.Values`.
+-- Both check for `Chart.yaml` so an unrelated `templates/` dir stays `yaml`.
+local function in_chart(dir)
+    return vim.uv.fs_stat(dir .. "/Chart.yaml") ~= nil
+end
+
+local function helm_template(path)
+    local chart = path:match("^(.*)/templates/")
+    if chart and in_chart(chart) then
+        return "helm"
+    end
+end
+
+local function helm_values(path)
+    if in_chart(vim.fs.dirname(path)) then
+        return "yaml.helm-values"
+    end
+end
+
 -- Register custom filetypes that Neovim does not detect by default.
 vim.filetype.add({
     extension = {
@@ -16,6 +38,12 @@ vim.filetype.add({
     },
     filename = {
         ["go.work"] = "gowork",
+    },
+    pattern = {
+        [".*/templates/.*%.ya?ml"] = helm_template,
+        [".*/templates/.*%.tpl"] = helm_template,
+        [".*/templates/NOTES%.txt"] = helm_template,
+        [".*/values.*%.ya?ml"] = helm_values,
     },
 })
 
@@ -94,9 +122,9 @@ vim.o.smartcase = true -- ...unless the pattern has uppercase letters
 vim.o.inccommand = "split" -- Live preview for `:s` / `:%s` in a scratch split
 vim.o.formatoptions = "rqnl1j" -- Comment editing (autocmds.lua strips `c` and `o` per filetype)
 vim.o.spelloptions = "camel" -- Treat camelCase parts as separate words for spell
--- `noinsert` keeps the buffer text as typed while the popup is open: the
--- first match is highlighted but not committed, so `<C-n>`/`<C-p>` move the
--- highlight without rewriting the buffer and `<C-y>` is the only confirm.
+-- `noinsert` highlights the first match without committing it, so `<C-y>`
+-- accepts the selection directly. Enter never accepts: the `<CR>` map in
+-- mini.lua dismisses the popup instead of confirming.
 vim.o.completeopt = "menuone,noinsert,fuzzy,nosort"
 
 -- `iskeyword` extensions like adding `-` are filetype-local (markdown link
