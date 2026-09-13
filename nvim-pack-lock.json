@@ -25,8 +25,8 @@
       "src": "https://github.com/nvim-mini/mini.nvim"
     },
     "monokai-pro.nvim": {
-      "rev": "5b06ae0736813b1c65d76a4be9edbe92be0b9c74",
-      "src": "https://github.com/gthelding/monokai-pro.nvim"
+      "rev": "a68e38b8e55d69a215d0f02598900a79c356da9d",
+      "src": "https://github.com/loctvl842/monokai-pro.nvim"
     },
     "nvim-highlight-colors": {
       "rev": "e4c7af0211866162d999ce0bdd6a029302e19139",

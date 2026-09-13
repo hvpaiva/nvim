@@ -24,7 +24,7 @@ vim.pack.add({
     "https://github.com/folke/todo-comments.nvim",
     "https://github.com/tpope/vim-sleuth",
     "https://github.com/psliwka/vim-dirtytalk",
-    "https://github.com/gthelding/monokai-pro.nvim",
+    "https://github.com/loctvl842/monokai-pro.nvim",
     "https://github.com/mbbill/undotree",
     "https://github.com/m4xshen/hardtime.nvim",
     "https://github.com/tris203/precognition.nvim",
