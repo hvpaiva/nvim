@@ -8,38 +8,48 @@
 
 local accent = "#DF782D"
 
--- monokai-pro ristretto filter. Minimal palette overrides:
+-- Follow the Omarchy desktop theme (lua/omarchy_theme.lua reads the current
+-- theme's neovim.lua and applies its colorscheme). Set `follow_omarchy = false`
+-- to go back to the monokai-pro setup below unconditionally; the original file
+-- is kept as theme.lua.bak-omarchy.
+local follow_omarchy = true
+local omarchy_applied = follow_omarchy and require("omarchy_theme").load()
+
+-- monokai-pro ristretto filter, used when no Omarchy theme applies. Minimal
+-- palette overrides:
 --   EndOfBuffer dimmed so the trailing `~` does not draw attention
 --   Directory in warm orange, no background
 --   Float borders in warm orange so they survive the transparency layer below
 --   Ruby keyword variants linked to @keyword for visual consistency
-require("monokai-pro").setup({
-    filter = "ristretto",
-    override = function()
-        return {
-            EndOfBuffer = { fg = "#72696a" },
-            Directory = { fg = accent, bg = "none" },
-            CursorLineNr = { fg = accent, bold = true },
-            -- Float borders and titles: warm orange, transparent bg. Most
-            -- `Mini*Title` groups link to `FloatTitle`, so overriding it covers
-            -- mini.notify, mini.clue, mini.cmdline-peek, mini.pick prompt, and
-            -- the bare `nvim_open_win({title=...})` used by MiniMisc.zoom.
-            FloatBorder = { fg = accent, bg = "none" },
-            FloatTitle = { fg = accent, bg = "none" },
-            MiniPickBorder = { fg = accent, bg = "none" },
-            -- Highlight the characters in each result that the query matched.
-            -- Default monokai-pro shade is too muted to pop on the ristretto bg.
-            MiniPickMatchRanges = { fg = accent, bold = true },
-            MiniPickMatchCurrent = { bg = "#403838", bold = true },
-            MiniPickMatchMarked = { fg = "#FFD866", italic = true },
-            MiniNotifyBorder = { fg = accent, bg = "none" },
-            MiniClueBorder = { fg = accent, bg = "none" },
-            ["@keyword.function.ruby"] = { link = "@keyword" },
-            ["@keyword.type.ruby"] = { link = "@keyword" },
-        }
-    end,
-})
-vim.cmd.colorscheme("monokai-pro")
+if not omarchy_applied then
+    require("monokai-pro").setup({
+        filter = "ristretto",
+        override = function()
+            return {
+                EndOfBuffer = { fg = "#72696a" },
+                Directory = { fg = accent, bg = "none" },
+                CursorLineNr = { fg = accent, bold = true },
+                -- Float borders and titles: warm orange, transparent bg. Most
+                -- `Mini*Title` groups link to `FloatTitle`, so overriding it covers
+                -- mini.notify, mini.clue, mini.cmdline-peek, mini.pick prompt, and
+                -- the bare `nvim_open_win({title=...})` used by MiniMisc.zoom.
+                FloatBorder = { fg = accent, bg = "none" },
+                FloatTitle = { fg = accent, bg = "none" },
+                MiniPickBorder = { fg = accent, bg = "none" },
+                -- Highlight the characters in each result that the query matched.
+                -- Default monokai-pro shade is too muted to pop on the ristretto bg.
+                MiniPickMatchRanges = { fg = accent, bold = true },
+                MiniPickMatchCurrent = { bg = "#403838", bold = true },
+                MiniPickMatchMarked = { fg = "#FFD866", italic = true },
+                MiniNotifyBorder = { fg = accent, bg = "none" },
+                MiniClueBorder = { fg = accent, bg = "none" },
+                ["@keyword.function.ruby"] = { link = "@keyword" },
+                ["@keyword.type.ruby"] = { link = "@keyword" },
+            }
+        end,
+    })
+    vim.cmd.colorscheme("monokai-pro")
+end
 
 -- Transparent backgrounds: editor + floats. Lets the terminal background
 -- (wallpaper, blur, etc.) show through. Re-applied on every colorscheme.

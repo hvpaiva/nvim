@@ -4,6 +4,10 @@
       "rev": "ff80dbd096ac54e737f73d69abf60b0c7dc11680",
       "src": "https://github.com/brentsec/VimTeacher"
     },
+    "aether.nvim": {
+      "rev": "567efb778534e11ee1072d4fe27178f705a27d8a",
+      "src": "https://github.com/bjarneo/aether.nvim"
+    },
     "conform.nvim": {
       "rev": "18aeab3d63d350dcf44d64c462cc489a3412af40",
       "src": "https://github.com/stevearc/conform.nvim"
