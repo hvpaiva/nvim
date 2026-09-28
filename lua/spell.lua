@@ -35,10 +35,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
                 local spell_dir = data_dir .. "/site/spell"
                 vim.fn.mkdir(spell_dir, "p")
                 vim.cmd(
-                    "mkspell! "
-                        .. vim.fn.fnameescape(spell_dir .. "/programming")
-                        .. " "
-                        .. vim.fn.fnameescape(tmp)
+                    "mkspell! " .. vim.fn.fnameescape(spell_dir .. "/programming") .. " " .. vim.fn.fnameescape(tmp)
                 )
                 vim.fn.delete(tmp)
             end, { desc = "Compile vim-dirtytalk wordlists into programming.utf-8.spl" })
@@ -70,8 +67,6 @@ vim.api.nvim_create_user_command("CustomSpellUpdate", function()
 
     local spell_dir = vim.fn.stdpath("data") .. "/site/spell"
     vim.fn.mkdir(spell_dir, "p")
-    vim.cmd(
-        "mkspell! " .. vim.fn.fnameescape(spell_dir .. "/custom") .. " " .. vim.fn.fnameescape(tmp)
-    )
+    vim.cmd("mkspell! " .. vim.fn.fnameescape(spell_dir .. "/custom") .. " " .. vim.fn.fnameescape(tmp))
     vim.fn.delete(tmp)
 end, { desc = "Compile ~/.config/nvim/spell/custom.words into custom.utf-8.spl" })

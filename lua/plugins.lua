@@ -77,17 +77,12 @@ require("conform").setup({
         -- Standard (matches modern Ruby ecosystem convention).
         ruby = function(bufnr)
             local path = vim.api.nvim_buf_get_name(bufnr)
-            local has_standard = vim.fs.find(
-                { ".standard.yml", "standard.yml" },
-                { upward = true, path = path }
-            )[1]
+            local has_standard = vim.fs.find({ ".standard.yml", "standard.yml" }, { upward = true, path = path })[1]
             if has_standard then
                 return { "standardrb" }
             end
-            local has_rubocop = vim.fs.find(
-                { ".rubocop.yml", ".rubocop_todo.yml", "rubocop.yml" },
-                { upward = true, path = path }
-            )[1]
+            local has_rubocop =
+                vim.fs.find({ ".rubocop.yml", ".rubocop_todo.yml", "rubocop.yml" }, { upward = true, path = path })[1]
             if has_rubocop then
                 return { "rubocop" }
             end

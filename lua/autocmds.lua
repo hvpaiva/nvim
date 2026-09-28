@@ -28,12 +28,7 @@ vim.api.nvim_create_autocmd("PackChanged", {
     group = vim.api.nvim_create_augroup("hvpaiva-ts-rebuild", { clear = true }),
     desc = "Rebuild TS parsers when nvim-treesitter updates",
     callback = function(ev)
-        if
-            ev.data
-            and ev.data.spec
-            and ev.data.spec.name == "nvim-treesitter"
-            and ev.data.kind == "update"
-        then
+        if ev.data and ev.data.spec and ev.data.spec.name == "nvim-treesitter" and ev.data.kind == "update" then
             require("nvim-treesitter").update()
         end
     end,
