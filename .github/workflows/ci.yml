@@ -1,0 +1,29 @@
+# Formatting (stylua), every Lua file compiles under Neovim, shell scripts pass shellcheck.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check .
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+      - name: every Lua file compiles
+        run: |
+          set -e
+          for f in $(git ls-files '*.lua'); do
+            nvim --headless --clean -es "+lua local chunk, err = loadfile('$f'); if not chunk then io.stderr:write(err .. '\n'); os.exit(1) end" +qa
+          done
+      - name: shell scripts
+        run: shellcheck scripts/*
