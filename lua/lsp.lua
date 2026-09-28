@@ -36,5 +36,7 @@ vim.lsp.enable({
     "bashls",
     "gh_actions_ls",
     "docker_language_server",
-    "ts_ls",
+    -- TypeScript 7's native language server (`tsc --lsp`). ts_ls needs a
+    -- TypeScript older than 7, which ships no tsserver anymore.
+    "tsc",
 })
