@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install/refresh language servers and formatters used by ~/.config/nvim.
 # Idempotent: only installs what is missing. Pass --force to reinstall all.
-# A failure in one step does not stop the others; a summary is printed at the end.
+# A failure in one tool does not stop the others; a summary is printed at the end.
 set -uo pipefail
 
 force=${1:-}
@@ -9,199 +9,66 @@ failed=()
 
 have() { command -v "$1" >/dev/null 2>&1; }
 say()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
-skip() { printf '\033[2m--  %s (already installed; use --force to reinstall)\033[0m\n' "$*"; }
 warn() { printf '\033[1;33m!!  %s\033[0m\n' "$*"; }
 
-run_step() {
-    local name=$1; shift
-    say "$name"
-    if ! "$@"; then
-        warn "$name failed"
-        failed+=("$name")
-    fi
-}
-
-# rust-analyzer: rustup component pairs it with the active toolchain.
+# rust-analyzer is the only tool outside mise: rustup pairs it with the active
+# toolchain, which is what rust-analyzer needs to resolve std and proc macros.
 if have rustup; then
+    say "rust-analyzer (rustup component)"
     if [[ $force == --force ]] || ! rustup component list --installed 2>/dev/null | grep -q '^rust-analyzer'; then
-        run_step "rust-analyzer (rustup component add)" rustup component add rust-analyzer
-    else
-        skip "rust-analyzer"
+        rustup component add rust-analyzer || failed+=("rust-analyzer")
     fi
 else
     warn "rustup missing: skipping rust-analyzer"
 fi
 
-# gopls: official install path.
-if have go; then
-    if [[ $force == --force ]] || ! have gopls; then
-        run_step "gopls (go install)" go install golang.org/x/tools/gopls@latest
-    else
-        skip "gopls"
-    fi
-else
-    warn "go missing: skipping gopls"
-fi
+# Everything else goes through mise. `mise use -g` installs *and* records the
+# version in ~/.config/mise/config.toml; recording is the part that matters,
+# because a shim with no declared version exits with "No version is set for
+# shim: <tool>" instead of running -- which reads to Neovim as an LSP that dies
+# during startup.
+tools=(
+    "go:golang.org/x/tools/gopls"
+    shfmt
+    "github:docker/docker-language-server"
+    helm-ls
+    lua-language-server
+    marksman
+    stylua
+    "gem:ruby-lsp"
+    "gem:standard"
+    "gem:rubocop"
+    prettier
+    "npm:yaml-language-server"
+    "npm:vscode-langservers-extracted"
+    "npm:bash-language-server"
+    "npm:gh-actions-language-server"
+    "npm:typescript-language-server"
+    "npm:typescript"
+)
 
-# shfmt (shell formatter, used by conform.nvim) and docker-language-server:
-# both are Go binaries with an official `go install` path.
-go_tool() {
-    local bin=$1 pkg=$2
-    if [[ $force == --force ]] || ! have "$bin"; then
-        run_step "$bin (go install)" go install "$pkg"
-    else
-        skip "$bin"
+# One `mise use -g` per tool, on purpose: the multi-argument form is atomic, so
+# a single package mise refuses (an unavailable version, a supply-chain guard)
+# discards the whole batch and leaves every shim undeclared.
+for tool in "${tools[@]}"; do
+    say "$tool"
+    if [[ $force == --force ]] && ! mise install --force "$tool"; then
+        failed+=("$tool")
+        continue
     fi
-}
-if have go; then
-    go_tool shfmt mvdan.cc/sh/v3/cmd/shfmt@latest
-    go_tool docker-language-server github.com/docker/docker-language-server/cmd/docker-language-server@latest
-else
-    warn "go missing: skipping shfmt / docker-language-server"
-fi
+    mise use -g "$tool" || failed+=("$tool")
+done
 
-# helm_ls: prebuilt binary from GitHub releases. It runs yaml-language-server
-# (installed below) for the Kubernetes side of chart templates.
-install_helm_ls() {
-    local tmp rc=0
-    tmp=$(mktemp -d) || return 1
-    curl -fsSL -o "$tmp/helm_ls" \
-        https://github.com/mrjosh/helm-ls/releases/latest/download/helm_ls_linux_amd64 \
-        || rc=1
-    (( rc == 0 )) && install -Dm755 "$tmp/helm_ls" "$HOME/.local/bin/helm_ls" || rc=$?
-    rm -rf "$tmp"
-    return $rc
-}
-if [[ $force == --force ]] || ! have helm_ls; then
-    run_step "helm_ls (GitHub release)" install_helm_ls
-else
-    skip "helm_ls"
-fi
-
-# lua-language-server: not packaged on Ubuntu noble, so we pull the prebuilt
-# tarball from upstream and extract into ~/.local/share/lua-language-server.
-install_lua_language_server() {
-    local dest=$HOME/.local/share/lua-language-server
-    local tmp rc=0
-    tmp=$(mktemp -d) || return 1
-    curl -fsSL -o "$tmp/release.json" \
-        https://api.github.com/repos/LuaLS/lua-language-server/releases/latest \
-        || { rm -rf "$tmp"; return 1; }
-    local url
-    url=$(grep -oE '"browser_download_url":\s*"[^"]*linux-x64[^"]*\.tar\.gz"' "$tmp/release.json" \
-        | head -1 | sed -E 's/.*"(https[^"]+)"/\1/')
-    if [[ -z $url ]]; then
-        rm -rf "$tmp"
-        return 1
-    fi
-    curl -fsSL -o "$tmp/lls.tar.gz" "$url" || rc=1
-    if (( rc == 0 )); then
-        rm -rf "$dest"
-        mkdir -p "$dest"
-        tar -xzf "$tmp/lls.tar.gz" -C "$dest" || rc=1
-    fi
-    if (( rc == 0 )); then
-        ln -sf "$dest/bin/lua-language-server" "$HOME/.local/bin/lua-language-server"
-    fi
-    rm -rf "$tmp"
-    return $rc
-}
-if [[ $force == --force ]] || ! have lua-language-server; then
-    run_step "lua-language-server (GitHub release)" install_lua_language_server
-else
-    skip "lua-language-server"
-fi
-
-# marksman: prebuilt binary from GitHub releases (cargo build is very slow).
-install_marksman() {
-    local tmp rc=0
-    tmp=$(mktemp -d) || return 1
-    curl -fsSL -o "$tmp/marksman" \
-        https://github.com/artempyanykh/marksman/releases/latest/download/marksman-linux-x64 \
-        || rc=1
-    (( rc == 0 )) && install -Dm755 "$tmp/marksman" "$HOME/.local/bin/marksman" || rc=$?
-    rm -rf "$tmp"
-    return $rc
-}
-if [[ $force == --force ]] || ! have marksman; then
-    run_step "marksman (GitHub release)" install_marksman
-else
-    skip "marksman"
-fi
-
-# stylua: formatter for lua (used by conform.nvim). Prebuilt zip from upstream.
-install_stylua() {
-    local tmp rc=0
-    tmp=$(mktemp -d) || return 1
-    curl -fsSL -o "$tmp/release.json" \
-        https://api.github.com/repos/JohnnyMorganz/StyLua/releases/latest \
-        || { rm -rf "$tmp"; return 1; }
-    local url
-    url=$(grep -oE '"browser_download_url":\s*"[^"]*stylua-linux-x86_64\.zip"' "$tmp/release.json" \
-        | head -1 | sed -E 's/.*"(https[^"]+)"/\1/')
-    if [[ -z $url ]]; then
-        rm -rf "$tmp"
-        return 1
-    fi
-    curl -fsSL -o "$tmp/stylua.zip" "$url" || rc=1
-    (( rc == 0 )) && unzip -q "$tmp/stylua.zip" -d "$tmp" || rc=$?
-    (( rc == 0 )) && install -Dm755 "$tmp/stylua" "$HOME/.local/bin/stylua" || rc=$?
-    rm -rf "$tmp"
-    return $rc
-}
-if [[ $force == --force ]] || ! have stylua; then
-    run_step "stylua (GitHub release)" install_stylua
-else
-    skip "stylua"
-fi
-
-# ruby-lsp / standardrb / rubocop: installed via mise's `gem:` backend so they
-# survive `mise use ruby@X`. The gem binary's shebang is hardcoded to the ruby
-# active at install time; if that ruby is uninstalled later the shim breaks
-# and we reinstall here against the currently active one.
-install_ruby_gem() {
-    local name=$1 bin=$2 mise_pkg=$3
-    local broken=0
+# Gem shims carry the ruby they were built against in their shebang. If that
+# ruby is gone the shim resolves but cannot run, so reinstall against the
+# current one.
+for bin in ruby-lsp standardrb rubocop; do
     if have "$bin" && ! "$bin" --version >/dev/null 2>&1; then
-        broken=1
+        warn "$bin shim broken (host ruby gone), reinstalling"
+        mise install --force "gem:${bin/standardrb/standard}" || failed+=("$bin")
     fi
-    if [[ $force == --force ]] || ! have "$bin" || (( broken )); then
-        (( broken )) && warn "$bin shim broken (host ruby gone), reinstalling"
-        run_step "$name (mise install $mise_pkg)" mise install --force "$mise_pkg"
-        mise reshim 2>/dev/null || true
-    else
-        skip "$name"
-    fi
-}
-if have mise; then
-    install_ruby_gem "ruby-lsp"   "ruby-lsp"   "gem:ruby-lsp"
-    install_ruby_gem "standardrb" "standardrb" "gem:standard"
-    install_ruby_gem "rubocop"    "rubocop"    "gem:rubocop"
-else
-    warn "mise missing: skipping ruby-lsp / standardrb / rubocop"
-fi
-
-# npm-distributed tools: prettier (markdown formatter used by conform.nvim)
-# and the language servers for YAML, JSON, shell, GitHub Actions and
-# TypeScript. `bin` is what lands on PATH; the rest is what npm installs.
-npm_tool() {
-    local bin=$1; shift
-    if [[ $force == --force ]] || ! have "$bin"; then
-        run_step "$bin (npm install -g $*)" npm install -g "$@"
-    else
-        skip "$bin"
-    fi
-}
-if have npm; then
-    npm_tool prettier prettier
-    npm_tool yaml-language-server yaml-language-server
-    npm_tool vscode-json-language-server vscode-langservers-extracted
-    npm_tool bash-language-server bash-language-server
-    npm_tool gh-actions-language-server gh-actions-language-server
-    npm_tool typescript-language-server typescript-language-server typescript
-else
-    warn "npm missing: skipping prettier and the npm language servers"
-fi
+done
+mise reshim 2>/dev/null || true
 
 echo
 if (( ${#failed[@]} == 0 )); then
