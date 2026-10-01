@@ -88,11 +88,18 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 })
 
 -- mini.snippets marks every tabstop with a double underline by default. Keep a
--- faint background on the current tabstop and clear the rest. Reapplied on
--- `ColorScheme` since mini.snippets re-asserts its defaults there.
+-- faint background on the current tabstop and clear the rest. The backgrounds
+-- come from the colorscheme (Visual, DiffDelete for a pending replace), with the
+-- ristretto values as the fallback. Reapplied on `ColorScheme` since
+-- mini.snippets re-asserts its defaults there.
+local function hl_bg(name)
+    return vim.api.nvim_get_hl(0, { name = name, link = false }).bg
+end
+
 local function snippet_hl()
-    vim.api.nvim_set_hl(0, "MiniSnippetsCurrent", { bg = "#403838" })
-    vim.api.nvim_set_hl(0, "MiniSnippetsCurrentReplace", { bg = "#4a3636" })
+    local visual = hl_bg("Visual")
+    vim.api.nvim_set_hl(0, "MiniSnippetsCurrent", { bg = visual or "#403838" })
+    vim.api.nvim_set_hl(0, "MiniSnippetsCurrentReplace", { bg = hl_bg("DiffDelete") or visual or "#4a3636" })
     vim.api.nvim_set_hl(0, "MiniSnippetsVisited", {})
     vim.api.nvim_set_hl(0, "MiniSnippetsUnvisited", {})
     vim.api.nvim_set_hl(0, "MiniSnippetsFinal", {})
@@ -106,26 +113,29 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 -- Colorize the `--MODE--` indicator in the cmdline (showmode) per mode.
 -- The default `ModeMsg` highlight is a flat gray; we rewrite it on every
 -- `ModeChanged` so Insert/Visual/Replace etc. each get a distinct color.
--- Palette picked to harmonize with the monokai-pro ristretto filter.
+-- Each mode takes a terminal palette slot, read from the colorscheme's
+-- `terminal_color_N` so it follows the Omarchy theme. The hex values, picked for
+-- the monokai-pro ristretto filter, cover schemes that set no terminal colors.
 local mode_colors = {
-    i = "#5AD4E6", -- Insert      → cyan
-    v = "#948AE3", -- Visual      → magenta
-    V = "#948AE3", -- Visual line → magenta
-    ["\22"] = "#948AE3", -- Visual block (^V)
-    R = "#F38BA8", -- Replace     → red/pink
-    c = "#F9CC6C", -- Command     → orange
-    t = "#7BD88F", -- Terminal    → green
-    s = "#948AE3", -- Select
-    S = "#948AE3",
-    ["\19"] = "#948AE3", -- Select block (^S)
-    o = "#FFD866", -- Operator-pending → yellow
+    i = { 6, "#5AD4E6" }, -- Insert      → cyan
+    v = { 5, "#948AE3" }, -- Visual      → magenta
+    V = { 5, "#948AE3" }, -- Visual line → magenta
+    ["\22"] = { 5, "#948AE3" }, -- Visual block (^V)
+    R = { 1, "#F38BA8" }, -- Replace     → red
+    c = { 3, "#F9CC6C" }, -- Command     → yellow
+    t = { 2, "#7BD88F" }, -- Terminal    → green
+    s = { 5, "#948AE3" }, -- Select
+    S = { 5, "#948AE3" },
+    ["\19"] = { 5, "#948AE3" }, -- Select block (^S)
+    o = { 3, "#FFD866" }, -- Operator-pending → yellow
 }
 vim.api.nvim_create_autocmd("ModeChanged", {
     group = vim.api.nvim_create_augroup("hvpaiva-modecolor", { clear = true }),
     desc = "Colorize --MODE-- per current mode",
     callback = function()
         local mode = vim.api.nvim_get_mode().mode
-        local color = mode_colors[mode] or mode_colors[mode:sub(1, 1)] or "#FFF1F3"
+        local entry = mode_colors[mode] or mode_colors[mode:sub(1, 1)]
+        local color = entry and (vim.g["terminal_color_" .. entry[1]] or entry[2]) or "#FFF1F3"
         vim.api.nvim_set_hl(0, "ModeMsg", { fg = color, bold = true })
     end,
 })
