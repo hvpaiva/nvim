@@ -2,9 +2,9 @@
 -- Follow the Omarchy desktop theme
 -- ============================================================================
 -- omarchy-theme-set renders ~/.local/state/omarchy/current/theme/neovim.lua for
--- each theme. That file is a LazyVim plugin spec: one or more colorscheme
--- plugins (with optional `dependencies` and `opts`) plus a LazyVim entry whose
--- `opts.colorscheme` names the scheme to load. This module reads it, installs
+-- each theme. That file is a LazyVim plugin spec: colorscheme plugins (with
+-- optional `dependencies` and `opts`), none for a scheme built into Neovim, plus
+-- a LazyVim entry whose `opts.colorscheme` names the scheme to load. This module reads it, installs
 -- the colorscheme plugins with vim.pack and applies the scheme. It returns true
 -- when a theme was applied, false when there is nothing to follow, so theme.lua
 -- can fall back to the personal monokai-pro setup.
@@ -68,17 +68,20 @@ function M.load()
             collect(spec, plugins)
         end
     end
-    if not colorscheme or #plugins == 0 then
+    if not colorscheme then
         return false
     end
 
-    local urls = {}
-    for _, p in ipairs(plugins) do
-        urls[#urls + 1] = repo_url(p.repo)
-    end
-    local added = pcall(vim.pack.add, urls)
-    if not added then
-        return false
+    -- A scheme that ships with Neovim (vim, default...) has no plugin to install.
+    if #plugins > 0 then
+        local urls = {}
+        for _, p in ipairs(plugins) do
+            urls[#urls + 1] = repo_url(p.repo)
+        end
+        local added = pcall(vim.pack.add, urls)
+        if not added then
+            return false
+        end
     end
 
     -- Colorscheme plugins usually expose `setup(opts)` under the plugin's module
