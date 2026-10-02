@@ -17,7 +17,6 @@ local omarchy_applied = follow_omarchy and require("omarchy_theme").load()
 
 -- monokai-pro ristretto filter, used when no Omarchy theme applies. Minimal
 -- palette overrides:
---   EndOfBuffer dimmed so the trailing `~` does not draw attention
 --   Directory in warm orange, no background
 --   Float borders in warm orange so they survive the transparency layer below
 --   Ruby keyword variants linked to @keyword for visual consistency
@@ -26,7 +25,6 @@ if not omarchy_applied then
         filter = "ristretto",
         override = function()
             return {
-                EndOfBuffer = { fg = "#72696a" },
                 Directory = { fg = accent, bg = "none" },
                 CursorLineNr = { fg = accent, bold = true },
                 -- Float borders and titles: warm orange, transparent bg. Most
@@ -54,6 +52,16 @@ end
 -- Transparent backgrounds: editor + floats. Lets the terminal background
 -- (wallpaper, blur, etc.) show through. Re-applied on every colorscheme.
 local function transparent()
+    local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+    local fg = vim.api.nvim_get_hl(0, { name = "LineNr", link = false }).fg or normal.fg or 0x808080
+    local bg = normal.bg or (vim.o.background == "light" and 0xFFFFFF or 0x000000)
+    local eob = 0
+    for shift = 0, 16, 8 do
+        local channel_fg = math.floor(fg / 2 ^ shift) % 256
+        local channel_bg = math.floor(bg / 2 ^ shift) % 256
+        eob = eob + math.floor(channel_bg + (channel_fg - channel_bg) * 0.55 + 0.5) * 2 ^ shift
+    end
+
     for _, group in ipairs({
         "Normal",
         "NormalNC",
@@ -80,6 +88,7 @@ local function transparent()
         hl.bg = "none"
         vim.api.nvim_set_hl(0, group, hl)
     end
+    vim.api.nvim_set_hl(0, "EndOfBuffer", { fg = eob })
 end
 transparent()
 vim.api.nvim_create_autocmd("ColorScheme", {
