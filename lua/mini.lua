@@ -33,7 +33,7 @@ require("mini.cmdline").setup()
 -- mini.comment: comment toggle (`gc{motion}`, `gcc`) overlapping the built-in
 -- 0.10+ commenting, plus the `gc` text object (`dgc` deletes a comment block,
 -- `vagc` selects one).
-require("mini.comment").setup()
+-- require("mini.comment").setup()
 
 -- mini.jump: smarter `f`/`F`/`t`/`T`. Searches across lines, repeats with the
 -- same key, and highlights all matches on the line until you commit a jump.
