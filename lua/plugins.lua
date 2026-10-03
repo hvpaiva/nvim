@@ -70,6 +70,7 @@ require("conform").setup({
         lua = { "stylua" },
         sh = { "shfmt" },
         bash = { "shfmt" },
+        haskell = { "ormolu" },
         markdown = { "prettier" },
         ["markdown.mdx"] = { "prettier" },
         -- Ruby: prefer Standard if the project ships a Standard config,

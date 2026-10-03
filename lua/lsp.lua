@@ -28,6 +28,7 @@ vim.lsp.enable({
     "lua_ls",
     "marksman",
     "gopls",
+    "hls",
     "rust_analyzer",
     "ruby_lsp",
     "helm_ls",

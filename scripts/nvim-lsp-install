@@ -22,12 +22,25 @@ else
     warn "rustup missing: skipping rust-analyzer"
 fi
 
+say "mise-ghcup backend"
+if ! mise settings set experimental true ||
+    ! mise config set -g 'plugins.vfox-backend:mise-ghcup' https://github.com/wasp-lang/mise-ghcup.git; then
+    failed+=("mise-ghcup backend")
+fi
+
 # Everything else goes through mise. `mise use -g` installs *and* records the
 # version in ~/.config/mise/config.toml; recording is the part that matters,
 # because a shim with no declared version exits with "No version is set for
 # shim: <tool>" instead of running -- which reads to Neovim as an LSP that dies
 # during startup.
 tools=(
+    ghcup@latest
+    "mise-ghcup:ghc@latest"
+    "mise-ghcup:hls@latest"
+    cabal@latest
+    stack@latest
+    ormolu@latest
+    "github:tfausak/cabal-gild@latest"
     "go:golang.org/x/tools/gopls"
     shfmt
     "github:docker/docker-language-server"

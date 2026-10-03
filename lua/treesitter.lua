@@ -22,6 +22,7 @@ local ensure_installed = {
     "gosum",
     "gotmpl",
     "gowork",
+    "haskell",
     "hcl",
     "helm",
     "html",
