@@ -40,6 +40,7 @@ tools=(
     cabal@latest
     stack@latest
     ormolu@latest
+    hlint@latest
     "github:tfausak/cabal-gild@latest"
     "go:golang.org/x/tools/gopls"
     shfmt

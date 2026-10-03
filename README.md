@@ -47,9 +47,11 @@ To install or refresh the external language tooling I use:
 
 This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `ruby-lsp`, `helm_ls`, `yaml-language-server`, `vscode-json-language-server`, `bash-language-server`, `gh-actions-language-server`, `docker-language-server`, `typescript-language-server`), the Lua formatter (`stylua`), the shell formatter (`shfmt`), the Markdown formatter (`prettier`, via `npm`), and the Ruby formatters (`standardrb`, `rubocop`, via `mise` gem backend). Conform picks up a project-local `node_modules/.bin/prettier` when present; the Ruby formatters always use whichever `standardrb`/`rubocop` is on `PATH`.
 
-The script also installs GHC and HLS through the `mise-ghcup` backend, plus Cabal, Stack, Ormolu, and `cabal-gild` through mise. It registers the backend, enables mise's experimental backend support, and selects `latest` for these Haskell tools.
+The script also installs GHC and HLS through the `mise-ghcup` backend, plus Cabal, Stack, Ormolu, HLint, and `cabal-gild` through mise. It registers the backend, enables mise's experimental backend support, and selects `latest` for these Haskell tools.
 
 HLS handles `.hs`, `.lhs`, and `.cabal` files. Tree-sitter highlights Haskell, and the existing `gq` and `gQ` mappings format `.hs` files with Ormolu. Use `gQ` to format Cabal files through HLS and `cabal-gild`.
+
+HLint runs through `nvim-lint` when entering or saving `.hs` and `.lhs` buffers. Suggestions appear as diagnostics and respect the project's `.hlint.yaml`.
 
 After installing parsers and language servers, sanity-check with:
 

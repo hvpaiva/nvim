@@ -19,6 +19,7 @@ vim.pack.add({
     "https://github.com/neovim/nvim-lspconfig",
     "https://github.com/tpope/vim-fugitive",
     "https://github.com/stevearc/conform.nvim",
+    "https://codeberg.org/mfussenegger/nvim-lint",
     "https://github.com/brenoprata10/nvim-highlight-colors",
     "https://github.com/nvim-lua/plenary.nvim",
     "https://github.com/folke/todo-comments.nvim",
@@ -96,6 +97,27 @@ require("conform").setup({
 -- formatting (gqip, gqap, gqG, visual + gq) uses the same formatter stack
 -- as the explicit `gQ` mapping in keymaps.lua.
 vim.o.formatexpr = "v:lua.require'conform'.formatexpr()"
+
+local lint = require("lint")
+lint.linters_by_ft = {
+    haskell = { "hlint" },
+    lhaskell = { "hlint" },
+}
+vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
+    group = vim.api.nvim_create_augroup("hvpaiva-haskell-lint", { clear = true }),
+    callback = function(ev)
+        local path = vim.api.nvim_buf_get_name(ev.buf)
+        if not lint.linters_by_ft[vim.bo[ev.buf].filetype] or vim.fn.filereadable(path) == 0 then
+            return
+        end
+        vim.api.nvim_buf_call(ev.buf, function()
+            lint.try_lint(nil, {
+                cwd = vim.fs.root(ev.buf, { ".hlint.yaml", "hie.yaml", "cabal.project", "stack.yaml", ".git" })
+                    or vim.fs.dirname(path),
+            })
+        end)
+    end,
+})
 
 -- treesitter-context: sticky scope header at the top of the window.
 require("treesitter-context").setup({
