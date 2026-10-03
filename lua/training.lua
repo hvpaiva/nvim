@@ -3,7 +3,7 @@
 -- ============================================================================
 -- Motion drills and guardrails live here so the normal editing path stays easy
 -- to reason about. Flip this to `false` when the active coaching phase is over;
--- the explicit games and commands remain available under `<Leader>t`.
+-- the explicit games and commands remain available under `<Leader>p`.
 local training_enabled_by_default = true
 
 require("hardtime").setup({
@@ -213,16 +213,16 @@ local function nmap_leader(suffix, rhs, desc)
     vim.keymap.set("n", "<leader>" .. suffix, rhs, { desc = desc })
 end
 
-nmap_leader("tt", "<cmd>Training Start<CR>", "Training start")
-nmap_leader("tS", "<cmd>Training Stop<CR>", "Training stop")
-nmap_leader("ta", "<cmd>Training Analyse<CR>", "Training analyze")
-nmap_leader("tb", run_vim_be_better, "VimBeBetter")
-nmap_leader("tT", run_vim_teacher, "VimTeacher")
-nmap_leader("th", function()
+nmap_leader("pp", "<cmd>Training Start<CR>", "Training start")
+nmap_leader("pS", "<cmd>Training Stop<CR>", "Training stop")
+nmap_leader("pa", "<cmd>Training Analyse<CR>", "Training analyze")
+nmap_leader("pb", run_vim_be_better, "VimBeBetter")
+nmap_leader("pT", run_vim_teacher, "VimTeacher")
+nmap_leader("ph", function()
     require("precognition").peek()
 end, "Precognition peek")
-nmap_leader("tH", toggle_precognition, "Precognition toggle")
-nmap_leader("td", toggle_hardtime, "Hardtime toggle")
-nmap_leader("tr", function()
+nmap_leader("pH", toggle_precognition, "Precognition toggle")
+nmap_leader("pd", toggle_hardtime, "Hardtime toggle")
+nmap_leader("pr", function()
     require("hardtime.report").report()
 end, "Hardtime report")

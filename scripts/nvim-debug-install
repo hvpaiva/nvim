@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mise use -g 'gem:debug@latest'
+mise use -g 'go:github.com/go-delve/delve/cmd/dlv@latest'
+mise use -g 'pipx:debugpy@latest'
+mise use -g 'github:microsoft/vscode-js-debug[asset_pattern=js-debug-dap-*.tar.gz]@latest'
+mise use -g 'github:vadimcn/codelldb[asset_pattern=codelldb-{{ os() }}-{{ arch() }}.vsix,bin_path=extension/adapter]@latest'

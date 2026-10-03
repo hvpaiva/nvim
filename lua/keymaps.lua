@@ -40,7 +40,7 @@ vim.keymap.set("n", "-", "<cmd>Oil<CR>", { desc = "Open parent directory" })
 
 -- Leader mappings ============================================================
 -- Convention: <Leader>{group}{action}. First key picks a semantic group
--- (Buffer, Explore, Find, Git, Other, Session, Training, Visits, Yank),
+-- (Buffer, Debug, Explore, Find, Git, Other, Practice, Session, Test, Visits, Yank),
 -- second key triggers the action.
 -- Lowercase = global/regular scope; uppercase = local/heavy variant.
 

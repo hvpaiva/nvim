@@ -9,9 +9,11 @@ return {
         --   .   method call
         --   :   symbols and constants (`Foo::Bar`)
         --   (   call
-        client.server_capabilities.completionProvider.triggerCharacters = { ".", ":", "(" }
+        if client.server_capabilities.completionProvider then
+            client.server_capabilities.completionProvider.triggerCharacters = { ".", ":", "(" }
+        end
     end,
-    settings = {
-        rubyLsp = { formatter = "none" },
+    init_options = {
+        formatter = "none",
     },
 }

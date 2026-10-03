@@ -32,6 +32,9 @@ vim.pack.add({
     "https://github.com/MeanderingProgrammer/render-markdown.nvim",
     "https://github.com/stevearc/oil.nvim",
     "https://github.com/folke/lazydev.nvim",
+    "https://github.com/vim-test/vim-test",
+    "https://github.com/tpope/vim-projectionist",
+    "https://codeberg.org/mfussenegger/nvim-dap",
 })
 
 -- Interactive training games stay managed by vim.pack, but their `plugin/`
@@ -67,6 +70,10 @@ vim.g.undotree_SetFocusWhenToggle = 1
 -- versions override these when present.
 require("conform").setup({
     default_format_opts = { lsp_format = "fallback" },
+    formatters = {
+        rubocop = require("ruby_tools").formatter("rubocop", "rubocop"),
+        standardrb = require("ruby_tools").formatter("standardrb", "standard"),
+    },
     formatters_by_ft = {
         lua = { "stylua" },
         sh = { "shfmt" },

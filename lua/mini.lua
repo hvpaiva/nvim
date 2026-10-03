@@ -137,7 +137,9 @@ miniclue.setup({
         { mode = "n", keys = "<Leader>g", desc = "+Git" },
         { mode = "n", keys = "<Leader>o", desc = "+Other" },
         { mode = "n", keys = "<Leader>s", desc = "+Session" },
-        { mode = "n", keys = "<Leader>t", desc = "+Training" },
+        { mode = "n", keys = "<Leader>p", desc = "+Practice" },
+        { mode = "n", keys = "<Leader>r", desc = "+Debug" },
+        { mode = "n", keys = "<Leader>t", desc = "+Test" },
         { mode = "n", keys = "<Leader>v", desc = "+Visits" },
         { mode = "n", keys = "<Leader>y", desc = "+Yank (with cursor return)" },
 

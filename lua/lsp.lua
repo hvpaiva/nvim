@@ -22,6 +22,8 @@ vim.diagnostic.config({
 -- completion/signature features it implements, so use the result directly.
 vim.lsp.config("*", { capabilities = require("mini.completion").get_lsp_capabilities() })
 
+vim.lsp.on_type_formatting.enable()
+
 -- Per-server tuning lives in `after/lsp/<name>.lua` (see `after/lsp/lua_ls.lua`).
 
 vim.lsp.enable({

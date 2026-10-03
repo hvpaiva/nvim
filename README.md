@@ -45,7 +45,9 @@ To install or refresh the external language tooling I use:
 ~/.config/nvim/scripts/nvim-lsp-install
 ```
 
-This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `ruby-lsp`, `helm_ls`, `yaml-language-server`, `vscode-json-language-server`, `bash-language-server`, `gh-actions-language-server`, `docker-language-server`, `typescript-language-server`), the Lua formatter (`stylua`), the shell formatter (`shfmt`), the Markdown formatter (`prettier`, via `npm`), and the Ruby formatters (`standardrb`, `rubocop`, via `mise` gem backend). Conform picks up a project-local `node_modules/.bin/prettier` when present; the Ruby formatters always use whichever `standardrb`/`rubocop` is on `PATH`.
+This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `ruby-lsp`, `helm_ls`, `yaml-language-server`, `vscode-json-language-server`, `bash-language-server`, `gh-actions-language-server`, `docker-language-server`, `typescript-language-server`), the Lua formatter (`stylua`), the shell formatter (`shfmt`), the Markdown formatter (`prettier`, via `npm`), and the Ruby formatters (`standardrb`, `rubocop`, via `mise` gem backend). Conform picks up a project-local `node_modules/.bin/prettier` when present. Ruby formatters prefer an executable project binstub, then `bundle exec` when the formatter is in the lockfile, then the tool on `PATH`.
+
+Ruby LSP leaves document formatting to Conform. Native LSP on-type formatting is enabled for every server that supports it, including Ruby's automatic `end` insertion.
 
 The script also installs GHC and HLS through the `mise-ghcup` backend, plus Cabal, Stack, Ormolu, HLint, and `cabal-gild` through mise. It registers the backend, enables mise's experimental backend support, and selects `latest` for these Haskell tools.
 
@@ -69,6 +71,9 @@ lua/keymaps.lua      mappings
 lua/plugins.lua      plugin list and non-mini setup
 lua/mini.lua         mini.nvim modules
 lua/training.lua     motion training tools and coaching toggles
+lua/workflow.lua     test runners and source/test navigation
+lua/debugging.lua    DAP adapters and shared debugging mappings
+lua/ruby_tools.lua   project-aware Ruby formatter selection
 lua/spell.lua        spell dictionaries and update commands
 lua/theme.lua        colorscheme and highlights
 lua/treesitter.lua   Tree-sitter setup
@@ -83,7 +88,79 @@ Most details are documented as comments next to the relevant config.
 
 ## Training
 
-Training tools are installed but isolated behind `<Leader>t` so they can be kept
+Training tools are installed but isolated behind `<Leader>p` so they can be kept
 without making the normal editing path noisy. `hardtime.nvim` is the only active
 coach by default; flip `training_enabled_by_default` in `lua/training.lua` when
 that is no longer useful.
+
+`<Leader>` is Space. Use `<Space>pp` to start training, `<Space>pS` to stop,
+`<Space>pa` to analyse motions, `<Space>pb` for VimBeBetter, `<Space>pT` for
+VimTeacher, `<Space>ph` for a movement hint, `<Space>pH` to toggle hints,
+`<Space>pd` to toggle Hardtime, and `<Space>pr` for its report.
+
+## Tests and navigation
+
+The same mappings use vim-test's runner detection in every supported language.
+Each test command runs from its project root through mise when available.
+The test terminal is reused, and repeating a test preserves its original project.
+Test frameworks remain project dependencies.
+
+| Mapping | Action |
+| --- | --- |
+| `<Space>tt` | Run the nearest test |
+| `<Space>tf` | Run the current test file, or the test alternate of a source file |
+| `<Space>ts` | Run the test suite |
+| `<Space>tl` | Repeat the last test |
+| `<Space>tv` | Visit the last test |
+| `<Space>ta` | Switch between source and test |
+| `<Space>tA` | Open source/test alternate in a vertical split |
+
+Default source/test conventions cover Ruby, Go, Rust, JavaScript, TypeScript,
+Python, Haskell, Lua, and shell. A project's `.projections.json` can provide its
+own layout. Rust unit tests inside the source file can be run directly.
+Haskell selects Stack when `stack.yaml` exists, otherwise Cabal; test granularity
+depends on the runner.
+
+## Debugging
+
+Install or refresh the adapters through mise:
+
+```bash
+~/.config/nvim/scripts/nvim-debug-install
+```
+
+This installs rdbg, Delve, debugpy, the JavaScript debug adapter, and CodeLLDB.
+The configuration supports Ruby files and Minitest/RSpec, Go packages and tests,
+Python, Node JavaScript/TypeScript, and compiled Rust/C/C++ executables.
+Ruby uses Bundler when a Gemfile is present; bundled debugging requires the
+`debug` gem in that bundle. Python prefers a project's `.venv`.
+Rust/C/C++ prompt for a compiled executable with debug symbols.
+Node projects that require a build step, a runtime loader, or browser debugging
+can supply their own `.vscode/launch.json`, which nvim-dap loads automatically.
+
+| Mapping | Action |
+| --- | --- |
+| `<Space>rr` | Start or continue |
+| `<Space>rb` / `<Space>rB` | Toggle breakpoint / conditional breakpoint |
+| `<Space>rn` / `<Space>ri` / `<Space>ro` | Step over / into / out |
+| `<Space>re` / `<Space>rs` | Inspect value / scopes |
+| `<Space>rc` | Toggle debug console |
+| `<Space>rl` | Repeat the last session |
+| `<Space>rq` | Stop debugging |
+
+These mappings are global; adding a DAP adapter for another language reuses them.
+
+## Verification
+
+```bash
+stylua --check .
+shellcheck scripts/*
+nvim --headless -u NONE -n -i NONE -l tests/workflow.lua
+NVIM_DEBUG_TEST_LANGUAGE=ruby nvim --headless -u NONE -n -i NONE -l tests/debugging.lua
+```
+
+The workflow checks use temporary fixtures and capture commands without running
+project tests. Debugging checks launch temporary programs and verify a breakpoint,
+value inspection, and stepping. The debug selector also accepts `ruby_bundle`,
+`go`, `rust`, `python`, `javascript`, and `typescript`; each requires its toolchain
+and adapter.
