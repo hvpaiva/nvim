@@ -78,3 +78,19 @@ vim.api.nvim_create_autocmd("LspAttach", {
         end
     end,
 })
+
+-- A script is meant to run: make a file executable on its first save with a
+-- shebang. `<Leader>oc` covers files without one.
+vim.api.nvim_create_autocmd("BufWritePost", {
+    group = vim.api.nvim_create_augroup("hvpaiva-shebang-exec", { clear = true }),
+    desc = "Make files with a shebang executable",
+    callback = function(ev)
+        local path = vim.api.nvim_buf_get_name(ev.buf)
+        local first = vim.api.nvim_buf_get_lines(ev.buf, 0, 1, false)[1] or ""
+        if first:match("^#!") and vim.fn.executable(path) == 0 then
+            local perm = vim.fn.getfperm(path)
+            -- Add x wherever r is set, like `chmod +x` under a 022 umask.
+            vim.fn.setfperm(path, (perm:gsub("r(.)%-", "r%1x")))
+        end
+    end,
+})
