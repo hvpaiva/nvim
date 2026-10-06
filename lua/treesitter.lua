@@ -62,6 +62,12 @@ treesitter.install(ensure_installed)
 -- Helm values files are plain YAML under a compound filetype (see options.lua).
 vim.treesitter.language.register("yaml", "yaml.helm-values")
 
+-- `vim.treesitter.start` clears 'syntax'. Vim's Ruby and shell indent scripts
+-- read synID() to leave string and heredoc bodies alone, so without the regex
+-- syntax underneath `=` reindents them and changes the string's value. These
+-- filetypes keep it loaded; tree-sitter still owns the highlighting.
+local regex_syntax_for_indent = { ruby = true, sh = true, bash = true }
+
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "*",
     callback = function(args)
@@ -78,7 +84,9 @@ vim.api.nvim_create_autocmd("FileType", {
             return
         end
 
-        pcall(vim.treesitter.start, buf, lang)
+        if pcall(vim.treesitter.start, buf, lang) and regex_syntax_for_indent[ft] then
+            vim.bo[buf].syntax = "ON"
+        end
 
         -- Use tree-sitter folds wherever the parser is available, falling
         -- back to the global `indent` method for filetypes without one.
