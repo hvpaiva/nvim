@@ -42,6 +42,7 @@ return {
     settings = {
         yaml = {
             -- Match the kind node image in the lab (cluster/kind.yaml).
+            -- after/lsp/helm_ls.lua reuses it for chart templates.
             kubernetesVersion = "v1.35.0",
             schemaStore = { enable = false, url = "" },
             schemas = {},
