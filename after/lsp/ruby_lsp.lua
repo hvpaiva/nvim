@@ -28,6 +28,10 @@ return {
     end,
     init_options = {
         formatter = "none",
+        -- Off by default upstream; shown only while `<Leader>oh` has them on.
+        featuresConfiguration = {
+            inlayHint = { implicitRescue = true, implicitHashValue = true },
+        },
     },
     -- ruby-lsp only detects RuboCop on its own. Standard projects get the
     -- Standard add-on (it ships in the standard gem); projects whose bundle
