@@ -245,7 +245,10 @@ MiniSnippets.setup({
         }),
     },
 })
-MiniSnippets.start_lsp_server()
+-- The server computes completion ranges from Neovim's byte columns but does
+-- not announce an encoding, so the client would read them as UTF-16 and
+-- replace the wrong span on lines with non-ASCII text before the prefix.
+MiniSnippets.start_lsp_server({ server_config = { offset_encoding = "utf-8" } })
 
 -- mini.diff: sign-column hunk markers from git index.
 local MiniDiff = require("mini.diff")
