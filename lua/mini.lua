@@ -220,15 +220,27 @@ require("mini.completion").setup({
 -- personal `snippets/global.json` if present (always available, any filetype).
 -- `markdown_inline` lang pattern lets markdown snippets work inside inline
 -- code blocks where the tree-sitter injected filetype is `markdown_inline`.
+-- friendly-snippets keeps shell snippets under `shell/`, a name no shell
+-- buffer has (tree-sitter says `bash`, the filetype `sh` or `zsh`); those
+-- languages read it on top of their default patterns.
 -- `start_lsp_server()` exposes snippets as completion candidates in the
 -- mini.completion popup.
 local MiniSnippets = require("mini.snippets")
+
+local function lang_patterns(lang, extra)
+    local patterns = { lang .. "/**/*.json", lang .. "/**/*.lua", "**/" .. lang .. ".json", "**/" .. lang .. ".lua" }
+    return vim.list_extend(extra, patterns)
+end
+
 MiniSnippets.setup({
     snippets = {
         MiniSnippets.gen_loader.from_file(vim.fn.stdpath("config") .. "/snippets/global.json"),
         MiniSnippets.gen_loader.from_lang({
             lang_patterns = {
                 markdown_inline = { "markdown.json" },
+                bash = lang_patterns("bash", { "shell/**/*.json" }),
+                sh = lang_patterns("sh", { "shell/**/*.json" }),
+                zsh = lang_patterns("zsh", { "shell/**/*.json" }),
             },
         }),
     },
