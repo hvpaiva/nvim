@@ -60,16 +60,15 @@ vim.g.undotree_DiffpanelHeight = 12
 vim.g.undotree_DiffAutoOpen = 1
 vim.g.undotree_SetFocusWhenToggle = 1
 
--- conform.nvim: per-filetype formatters. Lua + Markdown get explicit external
--- formatters; Ruby is project-detected (Standard vs RuboCop, see
--- lua/ruby_tools.lua, which linting follows too). For Go and Rust the LSP
--- formats and conform falls back to it via `lsp_format = "fallback"`.
--- ruby-lsp is told not to format (see after/lsp/ruby_lsp.lua) so the choice
--- below is the single source of truth for Ruby. Formatting is invoked via
--- the native `gq{motion}` operator (formatexpr wired below) and `gQ` for the
--- whole buffer (see keymaps.lua). External tooling (prettier, rubocop,
--- standardrb) is installed by scripts/nvim-lsp-install; project-bundled
--- versions override these when present.
+-- conform.nvim: per-filetype formatters. Ruby is project-detected (Standard vs
+-- RuboCop, see lua/ruby_tools.lua, which linting follows too). Rust, Haskell
+-- cabal files, YAML and JSON format through their language server, which
+-- conform falls back to via `lsp_format = "fallback"`; Go runs goimports and
+-- then gopls (gofumpt). ruby-lsp is told not to format (see
+-- after/lsp/ruby_lsp.lua) so the choice below is the single source of truth
+-- for Ruby. Formatting is invoked via `gq{motion}` (formatexpr below) and `gQ`
+-- for the whole buffer (see keymaps.lua). External tooling is installed by
+-- scripts/nvim-lsp-install; project-bundled versions override it when present.
 local ruby = require("ruby_tools")
 require("conform").setup({
     default_format_opts = { lsp_format = "fallback" },
@@ -98,6 +97,7 @@ require("conform").setup({
         markdown = { "prettier" },
         ["markdown.mdx"] = { "prettier" },
         ruby = ruby.formatters,
+        go = { "goimports", lsp_format = "last" },
     },
 })
 
@@ -106,9 +106,10 @@ require("conform").setup({
 -- attaches.
 vim.o.formatexpr = require("formatexpr").option
 
--- nvim-lint covers what no language server lints: HLint for Haskell, and Ruby
--- files whose bundle does not carry their linter (ruby-lsp lints the others;
--- ruby_tools.lint_plan decides which side owns a file).
+-- nvim-lint covers what no language server lints: HLint for Haskell,
+-- golangci-lint for Go projects that configure it, and Ruby files whose bundle
+-- does not carry their linter (ruby-lsp lints the others; ruby_tools.lint_plan
+-- decides which side owns a file).
 local lint = require("lint")
 lint.linters.ruby_standardrb = ruby.linter("standardrb")
 lint.linters.ruby_rubocop = ruby.linter("rubocop")
@@ -117,12 +118,19 @@ lint.linters_by_ft = {
     lhaskell = { "hlint" },
 }
 local haskell_root = { ".hlint.yaml", "hie.yaml", "cabal.project", "stack.yaml", ".git" }
+local golangci_configs = { ".golangci.yml", ".golangci.yaml", ".golangci.toml", ".golangci.json" }
 
 local function linters_for(buf, path)
     local ft = vim.bo[buf].filetype
     if ft == "ruby" then
         local editor = ruby.lint_plan(path).editor
         return editor and { "ruby_" .. editor }, ruby.bundle_root(path)
+    end
+    if ft == "go" then
+        -- golangci-lint's defaults overlap gopls and staticcheck; run it only
+        -- where the project chose its linters.
+        local root = vim.fs.root(buf, golangci_configs)
+        return root and { "golangcilint" }, root
     end
     return lint.linters_by_ft[ft], vim.fs.root(buf, haskell_root)
 end
