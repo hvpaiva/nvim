@@ -111,11 +111,38 @@ local function resolve(filename, executable, gem)
     return executable, {}, root or vim.fs.dirname(filename)
 end
 
+-- `rubocop --server` (conform's and nvim-lint's default) leaves a daemon per
+-- project that outlives the editor. Each one started from here is stopped on
+-- exit; the next run starts it again, so stopping one another editor still
+-- uses only costs that editor a cold start.
+local servers = {}
+
+local function track_server(command, args, cwd)
+    local argv = vim.list_extend({ command }, args)
+    servers[table.concat(argv, "\0") .. "\0" .. cwd] = { argv = argv, cwd = cwd }
+end
+
+--- Daemons this session started, as { argv, cwd } (for tests).
+function M.servers()
+    return vim.tbl_values(servers)
+end
+
+function M.stop_servers()
+    for _, server in pairs(servers) do
+        local argv = vim.list_extend(vim.deepcopy(server.argv), { "--stop-server" })
+        pcall(vim.system, argv, { cwd = server.cwd, detach = true })
+    end
+    servers = {}
+end
+
 --- conform formatter spec for a Ruby formatter resolved per buffer.
 function M.formatter(executable, gem)
     return {
         command = function(_, ctx)
-            local command = resolve(ctx.filename, executable, gem)
+            local command, args, cwd = resolve(ctx.filename, executable, gem)
+            if executable == "rubocop" then
+                track_server(command, args, cwd)
+            end
             return command
         end,
         prepend_args = function(_, ctx)
@@ -140,7 +167,10 @@ function M.linter(name)
     local gem = name == "standardrb" and "standard" or name
     return function()
         local base = require("lint.linters." .. name)
-        local command, prefix = resolve(vim.api.nvim_buf_get_name(0), name, gem)
+        local command, prefix, cwd = resolve(vim.api.nvim_buf_get_name(0), name, gem)
+        if name == "rubocop" then
+            track_server(command, prefix, cwd)
+        end
         return vim.tbl_extend("force", base, {
             cmd = command,
             args = vim.list_extend(vim.deepcopy(prefix), base.args),

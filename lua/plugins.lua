@@ -130,6 +130,12 @@ vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
     end,
 })
 
+vim.api.nvim_create_autocmd("VimLeavePre", {
+    group = vim.api.nvim_create_augroup("hvpaiva-rubocop-servers", { clear = true }),
+    desc = "Stop the RuboCop daemons this session started",
+    callback = ruby.stop_servers,
+})
+
 -- treesitter-context: sticky scope header at the top of the window.
 require("treesitter-context").setup({
     max_lines = 3,
