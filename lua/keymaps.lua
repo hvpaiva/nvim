@@ -2,8 +2,10 @@
 -- Edits, motions and quality-of-life mappings that enhance Vim defaults.
 
 -- Paste in visual mode without overwriting the unnamed register with the
--- selection that was just replaced.
-vim.keymap.set("x", "p", [["_dP]], { desc = "Paste over selection" })
+-- selection that was just replaced: that is the built-in `P` (`:h v_P`).
+-- `"_dP` would paste one position off when the selection ends the line or
+-- the buffer.
+vim.keymap.set("x", "p", "P", { desc = "Paste over selection" })
 
 -- Linewise paste above / below, with indent matching the surrounding context.
 -- `:iput` is `:put` with auto-indent (`:h :iput`). Forces linewise paste even
@@ -23,8 +25,12 @@ vim.keymap.set("n", "<C-c>", ":nohl<CR>", { desc = "Clear search highlight", sil
 vim.keymap.set("v", "<", "<gv", { desc = "Unindent and keep selection" })
 vim.keymap.set("v", ">", ">gv", { desc = "Indent and keep selection" })
 
--- Join the next line onto this one without the cursor jumping to the join point.
-vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines, keep cursor" })
+-- Join lines without the cursor jumping to the join point (keeps the count).
+vim.keymap.set("n", "J", function()
+    local view = vim.fn.winsaveview()
+    vim.cmd.normal({ vim.v.count1 .. "J", bang = true })
+    vim.fn.winrestview(view)
+end, { desc = "Join lines, keep cursor" })
 
 -- Half-page scroll, then recenter the cursor line.
 vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Half page down, recentered" })
@@ -72,10 +78,12 @@ vim.keymap.set(
 -- <leader>y{scope}{obj}: yank a text object and keep cursor + scroll where
 -- they were before the operator ran.
 -- Example: `<leader>yiw` yanks the inner word; cursor stays put.
+-- `:normal` without `!`, so mini.ai's text objects (q, a, f, F, B, ?)
+-- resolve like they do after a typed `y`.
 local function yank_textobject(scope, obj)
     return function()
         local view = vim.fn.winsaveview()
-        vim.cmd.normal({ "y" .. scope .. obj, bang = true })
+        vim.cmd.normal("y" .. scope .. obj)
         vim.fn.winrestview(view)
     end
 end
@@ -232,7 +240,7 @@ local function toggle_inlay_hints()
     vim.notify("inlay hints " .. (not enabled and "on" or "off"))
 end
 
-nmap_leader("oc", "<cmd>!chmod +x %<CR>", "Make file executable", { silent = true })
+nmap_leader("oc", "<cmd>!chmod +x %:S<CR>", "Make file executable", { silent = true })
 nmap_leader("oh", toggle_inlay_hints, "Toggle inlay hints")
 nmap_leader("om", "<cmd>RenderMarkdown toggle<CR>", "Toggle markdown render")
 nmap_leader("oR", "<cmd>restart<cr>", "Restart Neovim")
