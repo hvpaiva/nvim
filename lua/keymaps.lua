@@ -78,7 +78,7 @@ vim.keymap.set(
 -- <leader>y{scope}{obj}: yank a text object and keep cursor + scroll where
 -- they were before the operator ran.
 -- Example: `<leader>yiw` yanks the inner word; cursor stays put.
--- `:normal` without `!`, so mini.ai's text objects (q, a, f, F, B, ?)
+-- `:normal` without `!`, so mini.ai's text objects (q, a, f, F, o, c, B, ?)
 -- resolve like they do after a typed `y`.
 local function yank_textobject(scope, obj)
     return function()
@@ -109,6 +109,8 @@ for _, scope in ipairs({ "i", "a" }) do
         "t",
         "f",
         "F",
+        "o",
+        "c",
         "a",
     }) do
         vim.keymap.set(

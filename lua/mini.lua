@@ -99,8 +99,13 @@ require("mini.extra").setup()
 -- mini.ai: smarter text objects. Custom adds:
 --   * aB / iB - around / inside whole buffer (via mini.extra)
 --   * aF / iF - around / inside function definition (via tree-sitter)
+--   * ao / io - around / inside block, conditional or loop (Ruby `do ... end`
+--               and `{ }`, shell `if`/`for`/`while`; via tree-sitter)
+--   * ac / ic - around / inside class (via tree-sitter)
 -- `search_method = "cover"` only matches text objects that cover the cursor;
--- use `n`/`l` (next/last) suffixes to jump to ones outside the cursor.
+-- use the `N`/`l` (next/last) suffixes to reach ones outside the cursor.
+-- "Next" is `aN`/`iN` so that visual `an`/`in` stay Neovim's incremental
+-- selection (`:h v_an`): repeat `van` to grow to the enclosing node.
 -- NOTE: depends on mini.extra being set up above (uses MiniExtra.gen_ai_spec).
 local mini_ai = require("mini.ai")
 mini_ai.setup({
@@ -108,7 +113,13 @@ mini_ai.setup({
     custom_textobjects = {
         B = MiniExtra.gen_ai_spec.buffer(),
         F = mini_ai.gen_spec.treesitter({ a = "@function.outer", i = "@function.inner" }),
+        o = mini_ai.gen_spec.treesitter({
+            a = { "@block.outer", "@conditional.outer", "@loop.outer" },
+            i = { "@block.inner", "@conditional.inner", "@loop.inner" },
+        }),
+        c = mini_ai.gen_spec.treesitter({ a = "@class.outer", i = "@class.inner" }),
     },
+    mappings = { around_next = "aN", inside_next = "iN" },
     search_method = "cover",
 })
 
