@@ -88,6 +88,10 @@ require("conform").setup({
                 return vim.list_extend(args, { "-i", indent, "-ci", "-bn" })
             end,
         },
+        -- Web sources only go through prettier when the project configures it
+        -- (`require_cwd`); otherwise their language server formats them.
+        -- Markdown always uses plain `prettier`.
+        prettier_project = vim.tbl_extend("force", require("conform.formatters.prettier"), { require_cwd = true }),
     },
     formatters_by_ft = {
         lua = { "stylua" },
@@ -102,6 +106,16 @@ require("conform").setup({
         terraform = { "terraform_fmt" },
         ["terraform-vars"] = { "terraform_fmt" },
         toml = { "taplo" },
+        javascript = { "prettier_project" },
+        javascriptreact = { "prettier_project" },
+        typescript = { "prettier_project" },
+        typescriptreact = { "prettier_project" },
+        json = { "prettier_project" },
+        jsonc = { "prettier_project" },
+        css = { "prettier_project" },
+        scss = { "prettier_project" },
+        html = { "prettier_project" },
+        yaml = { "prettier_project" },
     },
 })
 

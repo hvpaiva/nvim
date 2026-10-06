@@ -41,6 +41,8 @@ vim.lsp.enable({
     -- TypeScript 7's native language server (`tsc --lsp`). ts_ls needs a
     -- TypeScript older than 7, which ships no tsserver anymore.
     "tsc",
+    -- Attaches only where the project has an ESLint config.
+    "eslint",
     -- Python: basedpyright for types, ruff for lint, imports and formatting
     -- (after/lsp/{basedpyright,ruff}.lua split the overlap).
     "basedpyright",
