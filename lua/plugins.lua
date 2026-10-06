@@ -35,6 +35,7 @@ vim.pack.add({
     "https://github.com/vim-test/vim-test",
     "https://github.com/tpope/vim-projectionist",
     "https://codeberg.org/mfussenegger/nvim-dap",
+    "https://github.com/b0o/SchemaStore.nvim",
 })
 
 -- Interactive training games stay managed by vim.pack, but their `plugin/`

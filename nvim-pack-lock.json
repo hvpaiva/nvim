@@ -1,5 +1,9 @@
 {
   "plugins": {
+    "SchemaStore.nvim": {
+      "rev": "83b0f1dc1ef1cc736bb4216654b1d173bcaf4ba6",
+      "src": "https://github.com/b0o/SchemaStore.nvim"
+    },
     "VimTeacher": {
       "rev": "ff80dbd096ac54e737f73d69abf60b0c7dc11680",
       "src": "https://github.com/brentsec/VimTeacher"

@@ -1,8 +1,10 @@
 -- yaml-language-server: validation and completion from JSON schemas.
 -- Source: https://github.com/redhat-developer/yaml-language-server
 --
--- SchemaStore (on by default) covers files it knows by name: GitHub
--- workflows, Chart.yaml, kustomization.yaml, and so on. Kubernetes manifests
+-- SchemaStore.nvim's catalog (the same one jsonls uses) covers files it knows
+-- by name: Chart.yaml, kustomization.yaml, compose files, and so on. GitHub
+-- workflows are left out of it: gh_actions_ls owns them, and both servers
+-- reporting the same error twice helps no one. Kubernetes manifests
 -- have no fixed name, so each buffer that looks like one (top-level
 -- `apiVersion:` and `kind:`) is added to the server's `kubernetes` schema.
 -- From there the server picks the schema per document: built-in kinds from
@@ -41,9 +43,15 @@ return {
         yaml = {
             -- Match the kind node image in the lab (cluster/kind.yaml).
             kubernetesVersion = "v1.35.0",
+            schemaStore = { enable = false, url = "" },
             schemas = {},
         },
     },
+    -- The catalog loads when the server starts, not with the editor;
+    -- mark_manifest then adds to the same table.
+    before_init = function(_, config)
+        config.settings.yaml.schemas = require("schemastore").yaml.schemas({ ignore = { "GitHub Workflow" } })
+    end,
     on_attach = function(client, bufnr)
         mark_manifest(client, bufnr)
         -- A new file only gets its `apiVersion`/`kind` after it is opened.
