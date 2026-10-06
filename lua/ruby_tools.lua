@@ -203,21 +203,14 @@ local function lens_test(cmd)
     }
 end
 
---- Runs a test lens through vim-test's strategy and project transformation, so
---- it lands in the same sticky terminal as `<Leader>t`.
+--- Runs a test lens in the same sticky terminal as `<Leader>t`.
 function M.run_test_lens(cmd)
     local test = lens_test(cmd)
     if not test.command then
         vim.notify("ruby-lsp test lens without a command", vim.log.levels.ERROR)
         return
     end
-    local cwd = vim.fn.getcwd()
-    vim.cmd.lcd(vim.fn.fnameescape(test.root))
-    local ok, err = pcall(vim.fn["test#shell"], test.command, vim.g["test#strategy"] or "basic")
-    vim.cmd.lcd(vim.fn.fnameescape(cwd))
-    if not ok then
-        vim.notify(tostring(err), vim.log.levels.ERROR)
-    end
+    require("lenses").run_in_test_terminal(test.command, test.root)
 end
 
 --- nvim-dap configuration debugging the test a lens names (the `ruby` adapter
