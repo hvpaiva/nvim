@@ -29,6 +29,14 @@ local cases = {
         line = 4,
     },
     python = { ft = "python", file = "main.py", source = "value = 40\nvalue += 2\nprint(value)", line = 3 },
+    bash = {
+        ft = "sh",
+        file = "main.sh",
+        source = '#!/usr/bin/env bash\nvalue=40\nvalue=$((value + 2))\necho "$value"',
+        line = 4,
+        expression = "$value",
+        expected = "'42'",
+    },
     javascript = {
         ft = "javascript",
         file = "main.js",
@@ -135,8 +143,9 @@ local ok, failure = xpcall(function()
         assert(not terminated, "Debuggee exited before expected breakpoint")
     end
     assert(frame.line == case.line, "Wrong breakpoint: " .. vim.inspect(frame))
-    local result = request(session, "evaluate", { expression = "value", frameId = frame.id, context = "hover" })
-    assert(result.result == "42", "Wrong value: " .. vim.inspect(result))
+    local result =
+        request(session, "evaluate", { expression = case.expression or "value", frameId = frame.id, context = "hover" })
+    assert(result.result == (case.expected or "42"), "Wrong value: " .. vim.inspect(result))
     local previous = stopped
     dap.step_over()
     assert(

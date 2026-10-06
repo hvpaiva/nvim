@@ -162,6 +162,60 @@ for _, ft in ipairs({ "javascript", "javascriptreact", "typescript", "typescript
     }
 end
 
+-- Bash: the DAP server of the vscode-bash-debug extension (installed by
+-- scripts/nvim-debug-install) driving bashdb. The bashdb it bundles predates
+-- the Bash running here and fails on it, so the configurations point at the
+-- one `dots` builds for this Bash version into ~/.local.
+dap.adapters.bashdb = function(callback, config)
+    local result = vim.system({ "mise", "where", "github:rogalmic/vscode-bash-debug" }, { text = true }):wait()
+    local server = vim.trim(result.stdout or "") .. "/extension/out/bashDebug.js"
+    if result.code ~= 0 or vim.fn.filereadable(server) ~= 1 then
+        vim.notify("Bash debug adapter missing. Run scripts/nvim-debug-install.", vim.log.levels.ERROR)
+        return
+    end
+    if config.pathBashdb == "" then
+        vim.notify("bashdb missing. Run dots update (it builds bashdb for this Bash).", vim.log.levels.ERROR)
+        return
+    end
+    callback({ type = "executable", command = "node", args = { server } })
+end
+
+local function bashdb()
+    return vim.fn.exepath("bashdb")
+end
+
+local function bashdb_lib()
+    local bin = bashdb()
+    return bin ~= "" and vim.fs.dirname(vim.fs.dirname(bin)) .. "/share/bashdb" or ""
+end
+
+local function bash_configuration(name, args)
+    return {
+        name = name,
+        type = "bashdb",
+        request = "launch",
+        program = "${file}",
+        args = args,
+        env = {},
+        cwd = root,
+        pathBash = "bash",
+        pathBashdb = bashdb,
+        pathBashdbLib = bashdb_lib,
+        pathCat = "cat",
+        pathMkfifo = "mkfifo",
+        pathPkill = "pkill",
+        -- The script runs in a Neovim terminal, so it can read stdin.
+        terminalKind = "integrated",
+    }
+end
+
+dap.configurations.sh = {
+    bash_configuration("Bash: current file", {}),
+    bash_configuration("Bash: current file with arguments", function()
+        return require("dap.utils").splitstr(vim.fn.input("Arguments: "))
+    end),
+}
+
 local function debug_nearest_test()
     if vim.bo.filetype == "ruby" then
         require("ruby_tools").debug_nearest_test()

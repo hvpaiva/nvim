@@ -2,8 +2,12 @@
 set -euo pipefail
 
 # Ruby needs nothing here: rdbg ships with every Ruby (the bundled debug gem)
-# and lua/debugging.lua runs the project's Ruby's own.
+# and lua/debugging.lua runs the project's Ruby's own. bashdb, which the Bash
+# adapter drives, is built for the running Bash by `dots` (step_bashdb).
 mise use -g 'go:github.com/go-delve/delve/cmd/dlv@latest'
 mise use -g 'pipx:debugpy@latest'
 mise use -g 'github:microsoft/vscode-js-debug[asset_pattern=js-debug-dap-*.tar.gz]@latest'
 mise use -g 'github:vadimcn/codelldb[asset_pattern=codelldb-{{ os() }}-{{ arch() }}.vsix,bin_path=extension/adapter]@latest'
+# The extension publishes its releases without tags; `latest` would resolve to
+# the older tagged v0.3.7, so the newest one (0.3.9) is pinned by its release name.
+mise use -g 'github:rogalmic/vscode-bash-debug[asset_pattern=bash-debug-*.vsix]@untagged-438733f35feb8659d939'
