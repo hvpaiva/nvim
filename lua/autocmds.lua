@@ -48,17 +48,33 @@ vim.api.nvim_create_autocmd("LspAttach", {
     end,
 })
 
--- Enable auto-refreshing code lenses for clients that implement
--- textDocument/codeLens (rust-analyzer, ruby-lsp). `vim.lsp.codelens.enable`
--- handles BufEnter / InsertLeave / BufWritePost refresh internally.
+-- Code lenses only from servers whose lenses `gl` can act on: their commands
+-- run on the server (gopls) or have a client-side handler here (ruby-lsp's
+-- tests, rust-analyzer's runnables and references, terraform-ls' references).
+-- Others (lua_ls, tsc) only add "N references" noise above every function.
+-- `vim.lsp.codelens.enable` handles BufEnter / InsertLeave / BufWritePost
+-- refresh internally.
+local codelens_clients = { ruby_lsp = true, rust_analyzer = true, terraformls = true, gopls = true }
+
+-- On-type formatting edits the line as you type in the server's own style;
+-- lua_ls and tsc would fight stylua and prettier. Only servers whose edits
+-- are the point: ruby-lsp closes blocks (`end`, `|`), rust-analyzer adds `;`
+-- and the like.
+local on_type_clients = { ruby_lsp = true, rust_analyzer = true }
+
 vim.api.nvim_create_autocmd("LspAttach", {
     group = vim.api.nvim_create_augroup("hvpaiva-lsp-codelens", { clear = true }),
-    desc = "Enable code lenses when supported",
+    desc = "Enable code lenses and on-type formatting for chosen servers",
     callback = function(ev)
         local client = vim.lsp.get_client_by_id(ev.data.client_id)
-        if not client or not client:supports_method("textDocument/codeLens") then
+        if not client then
             return
         end
-        vim.lsp.codelens.enable(true, { bufnr = ev.buf })
+        if codelens_clients[client.name] and client:supports_method("textDocument/codeLens") then
+            vim.lsp.codelens.enable(true, { bufnr = ev.buf })
+        end
+        if on_type_clients[client.name] and client:supports_method("textDocument/onTypeFormatting") then
+            vim.lsp.on_type_formatting.enable(true, { client_id = client.id })
+        end
     end,
 })
