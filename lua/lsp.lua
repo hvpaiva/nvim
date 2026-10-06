@@ -47,4 +47,5 @@ vim.lsp.enable({
     "ruff",
     "terraformls",
     "tflint",
+    "taplo",
 })

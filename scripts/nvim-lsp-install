@@ -66,6 +66,7 @@ tools=(
     terraform
     terraform-ls
     tflint
+    taplo
 )
 
 # One `mise use -g` per tool, on purpose: the multi-argument form is atomic, so

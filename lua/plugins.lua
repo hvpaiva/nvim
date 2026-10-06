@@ -101,6 +101,7 @@ require("conform").setup({
         python = { "ruff_organize_imports", "ruff_format" },
         terraform = { "terraform_fmt" },
         ["terraform-vars"] = { "terraform_fmt" },
+        toml = { "taplo" },
     },
 })
 
