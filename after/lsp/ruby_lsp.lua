@@ -44,4 +44,10 @@ return {
             end
         end
     end,
+    -- Client-side commands behind ruby-lsp's test code lenses (`gl`).
+    commands = {
+        ["rubyLsp.runTest"] = ruby.run_test_lens,
+        ["rubyLsp.runTestInTerminal"] = ruby.run_test_lens,
+        ["rubyLsp.debugTest"] = ruby.debug_test_lens,
+    },
 }

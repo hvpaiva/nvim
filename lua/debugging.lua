@@ -15,16 +15,21 @@ end
 
 -- rdbg comes from the project's Ruby (`mise x` resolves it from the working
 -- directory, as for ruby-lsp): the debug gem it injects is a C extension tied
--- to that Ruby's ABI. The file runs with Ruby or RSpec, under Bundler when the
+-- to that Ruby's ABI. A `command` (from ruby-lsp's "Debug" test lens) runs as
+-- given; otherwise the file runs with Ruby or RSpec, under Bundler when the
 -- project has a Gemfile.
 dap.adapters.ruby = function(callback, config)
     local args = { "--open", "--host", "127.0.0.1", "--port", "${port}", "-c", "--" }
-    if require("ruby_tools").bundle_root(config.program) then
-        vim.list_extend(args, { "bundle", "exec" })
+    if config.command then
+        vim.list_extend(args, { "sh", "-c", config.command })
+    else
+        if require("ruby_tools").bundle_root(config.program) then
+            vim.list_extend(args, { "bundle", "exec" })
+        end
+        vim.list_extend(args, config.runner == "rspec" and { "rspec" } or { "ruby", "-Ilib", "-Itest" })
+        args[#args + 1] = config.program
+        vim.list_extend(args, config.args or {})
     end
-    vim.list_extend(args, config.runner == "rspec" and { "rspec" } or { "ruby", "-Ilib", "-Itest" })
-    args[#args + 1] = config.program
-    vim.list_extend(args, config.args or {})
     local command = "rdbg"
     if vim.fn.executable("mise") == 1 then
         command, args = "mise", vim.list_extend({ "x", "--", "rdbg" }, args)
@@ -157,6 +162,14 @@ for _, ft in ipairs({ "javascript", "javascriptreact", "typescript", "typescript
     }
 end
 
+local function debug_nearest_test()
+    if vim.bo.filetype == "ruby" then
+        require("ruby_tools").debug_nearest_test()
+    else
+        vim.notify("Debug nearest test is not set up for " .. vim.bo.filetype, vim.log.levels.WARN)
+    end
+end
+
 local function map(suffix, action, desc)
     vim.keymap.set("n", "<leader>r" .. suffix, action, { desc = desc })
 end
@@ -175,6 +188,7 @@ map("i", dap.step_into, "Step into")
 map("o", dap.step_out, "Step out")
 map("q", dap.terminate, "Stop debugging")
 map("l", dap.run_last, "Repeat debug session")
+map("t", debug_nearest_test, "Debug nearest test")
 map("c", dap.repl.toggle, "Debug console")
 map("s", function()
     local widgets = require("dap.ui.widgets")

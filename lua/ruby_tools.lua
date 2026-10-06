@@ -1,5 +1,5 @@
 -- Ruby project tooling shared by formatting (conform), linting (ruby-lsp or
--- nvim-lint) and debugging.
+-- nvim-lint), ruby-lsp's test code lenses and debugging.
 local M = {}
 
 function M.bundle_root(filename)
@@ -185,6 +185,99 @@ function M.linter(name)
             end,
         })
     end
+end
+
+-- ruby-lsp marks every test and group with "Run", "Run In Terminal" and
+-- "Debug" code lenses whose commands the client implements. Their arguments
+-- are { path, id, command, location, name }: `command` is the shell line that
+-- runs that one test, `location` its 0-based line span.
+local function lens_test(cmd)
+    local args = cmd.arguments or {}
+    local path = args[1]
+    return {
+        path = path,
+        command = args[3],
+        location = args[4],
+        name = args[5] or args[2],
+        root = path and (M.bundle_root(path) or vim.fs.dirname(path)),
+    }
+end
+
+--- Runs a test lens through vim-test's strategy and project transformation, so
+--- it lands in the same sticky terminal as `<Leader>t`.
+function M.run_test_lens(cmd)
+    local test = lens_test(cmd)
+    if not test.command then
+        vim.notify("ruby-lsp test lens without a command", vim.log.levels.ERROR)
+        return
+    end
+    local cwd = vim.fn.getcwd()
+    vim.cmd.lcd(vim.fn.fnameescape(test.root))
+    local ok, err = pcall(vim.fn["test#shell"], test.command, vim.g["test#strategy"] or "basic")
+    vim.cmd.lcd(vim.fn.fnameescape(cwd))
+    if not ok then
+        vim.notify(tostring(err), vim.log.levels.ERROR)
+    end
+end
+
+--- nvim-dap configuration debugging the test a lens names (the `ruby` adapter
+--- runs `command` under rdbg).
+function M.debug_test_config(cmd)
+    local test = lens_test(cmd)
+    return {
+        name = "Ruby: " .. tostring(test.name),
+        type = "ruby",
+        request = "attach",
+        command = test.command,
+        cwd = test.root,
+        localfs = true,
+    }
+end
+
+function M.debug_test_lens(cmd)
+    require("dap").run(M.debug_test_config(cmd))
+end
+
+--- The "Debug" lens command of the innermost test or group around `row`
+--- (0-based), from a textDocument/codeLens result.
+function M.nearest_debug_lens(lenses, row)
+    local best
+    for _, lens in ipairs(lenses or {}) do
+        local cmd = lens.command
+        local location = cmd and cmd.command == "rubyLsp.debugTest" and lens_test(cmd).location
+        if
+            location
+            and location.start_line <= row
+            and row <= location.end_line
+            and (not best or location.start_line > lens_test(best).location.start_line)
+        then
+            best = cmd
+        end
+    end
+    return best
+end
+
+function M.debug_nearest_test()
+    local bufnr = vim.api.nvim_get_current_buf()
+    local client = vim.lsp.get_clients({ bufnr = bufnr, name = "ruby_lsp" })[1]
+    if not client then
+        vim.notify("ruby-lsp is not attached to this buffer", vim.log.levels.WARN)
+        return
+    end
+    local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+    local params = { textDocument = vim.lsp.util.make_text_document_params(bufnr) }
+    client:request("textDocument/codeLens", params, function(err, lenses)
+        if err then
+            vim.notify("ruby-lsp code lens: " .. err.message, vim.log.levels.ERROR)
+            return
+        end
+        local cmd = M.nearest_debug_lens(lenses, row)
+        if cmd then
+            M.debug_test_lens(cmd)
+        else
+            vim.notify("No test around the cursor", vim.log.levels.WARN)
+        end
+    end, bufnr)
 end
 
 return M
