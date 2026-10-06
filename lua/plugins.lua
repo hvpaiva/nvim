@@ -35,6 +35,7 @@ vim.pack.add({
     "https://github.com/vim-test/vim-test",
     "https://github.com/tpope/vim-projectionist",
     "https://codeberg.org/mfussenegger/nvim-dap",
+    "https://github.com/Wansmer/treesj",
     "https://github.com/b0o/SchemaStore.nvim",
 })
 
@@ -202,6 +203,11 @@ require("render-markdown").setup({ enabled = false })
 -- Opening a directory (`nvim .`, `:e somedir/`) lands in oil; see the netrw
 -- note in options.lua. Keymaps live in keymaps.lua.
 require("oil").setup({ columns = {} })
+
+-- treesj (tree-sitter split/join) needs no setup: Ruby buffers map `gS` to
+-- `require("treesj").toggle()` (after/ftplugin/ruby.lua), and leaving out
+-- `setup()` keeps its default keymaps off and its language presets out of
+-- startup. mini.splitjoin keeps `gS` everywhere else.
 
 -- lazydev.nvim: manages the lua_ls `workspace.library` dynamically. Seeds it
 -- with VIMRUNTIME (the `vim.*` API) and adds a plugin's types only when a file

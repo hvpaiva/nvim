@@ -250,6 +250,52 @@ function M.nearest_debug_lens(lenses, row)
     return best
 end
 
+--- mini.pick items for ruby-lsp's `rubyLsp/workspace/dependencies` answer:
+--- the bundle's gems, direct dependencies first.
+function M.gem_items(gems)
+    local items = {}
+    for _, gem in ipairs(gems or {}) do
+        items[#items + 1] = {
+            text = ("%s %s%s"):format(gem.name, gem.version, gem.dependency and "" or "  (transitive)"),
+            path = gem.path,
+            direct = gem.dependency,
+        }
+    end
+    table.sort(items, function(a, b)
+        if a.direct ~= b.direct then
+            return a.direct
+        end
+        return a.text < b.text
+    end)
+    return items
+end
+
+--- Picks one of the project's gems and opens its directory in oil.
+function M.pick_gems()
+    local client = vim.lsp.get_clients({ bufnr = 0, name = "ruby_lsp" })[1]
+    if not client then
+        vim.notify("ruby-lsp is not attached to this buffer", vim.log.levels.WARN)
+        return
+    end
+    client:request("rubyLsp/workspace/dependencies", vim.empty_dict(), function(err, gems)
+        if err then
+            vim.notify("ruby-lsp dependencies: " .. err.message, vim.log.levels.ERROR)
+            return
+        end
+        MiniPick.start({
+            source = {
+                name = "Gems",
+                items = M.gem_items(gems),
+                choose = function(item)
+                    vim.schedule(function()
+                        require("oil").open(item.path)
+                    end)
+                end,
+            },
+        })
+    end)
+end
+
 function M.debug_nearest_test()
     local bufnr = vim.api.nvim_get_current_buf()
     local client = vim.lsp.get_clients({ bufnr = bufnr, name = "ruby_lsp" })[1]
