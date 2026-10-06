@@ -45,4 +45,6 @@ vim.lsp.enable({
     -- (after/lsp/{basedpyright,ruff}.lua split the overlap).
     "basedpyright",
     "ruff",
+    "terraformls",
+    "tflint",
 })

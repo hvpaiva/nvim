@@ -63,6 +63,9 @@ tools=(
     "npm:typescript"
     "npm:basedpyright"
     ruff
+    terraform
+    terraform-ls
+    tflint
 )
 
 # One `mise use -g` per tool, on purpose: the multi-argument form is atomic, so

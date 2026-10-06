@@ -38,6 +38,9 @@ vim.filetype.add({
     extension = {
         gotmpl = "gotmpl",
         mdx = "markdown.mdx",
+        -- Neovim guesses between Terraform and TinyFugue from the contents, so
+        -- a new (empty) .tf file would open as TinyFugue, without terraform-ls.
+        tf = "terraform",
     },
     filename = {
         ["go.work"] = "gowork",

@@ -99,6 +99,8 @@ require("conform").setup({
         ruby = ruby.formatters,
         go = { "goimports", lsp_format = "last" },
         python = { "ruff_organize_imports", "ruff_format" },
+        terraform = { "terraform_fmt" },
+        ["terraform-vars"] = { "terraform_fmt" },
     },
 })
 
