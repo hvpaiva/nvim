@@ -6,7 +6,7 @@
 --      can resolve them. Must run before mini.lua / theme.lua / treesitter.lua
 --      / lsp.lua, all of which `require` plugin modules.
 --   2. Sets up editing plugins that don't fit in mini.lua: conform, nvim-lint,
---      treesitter-context, nvim-highlight-colors, todo-comments.
+--      treesitter-context, nvim-highlight-colors, todo-comments, quicker.
 --   3. Exposes `:PackUpdate` to refresh plugins.
 -- Mini.* setups live in `lua/mini.lua`; training tools in `lua/training.lua`;
 -- spell commands in `lua/spell.lua`; theme + palette in `lua/theme.lua`.
@@ -36,6 +36,7 @@ vim.pack.add({
     "https://github.com/tpope/vim-projectionist",
     "https://codeberg.org/mfussenegger/nvim-dap",
     "https://github.com/Wansmer/treesj",
+    "https://github.com/stevearc/quicker.nvim",
     "https://github.com/b0o/SchemaStore.nvim",
 })
 
@@ -208,6 +209,10 @@ require("oil").setup({ columns = {} })
 -- `require("treesj").toggle()` (after/ftplugin/ruby.lua), and leaving out
 -- `setup()` keeps its default keymaps off and its language presets out of
 -- startup. mini.splitjoin keeps `gS` everywhere else.
+
+-- quicker.nvim: the quickfix list as an editable buffer (edit the lines and
+-- `:w` to apply them to the files) with surrounding context on `>`/`<`.
+require("quicker").setup()
 
 -- lazydev.nvim: manages the lua_ls `workspace.library` dynamically. Seeds it
 -- with VIMRUNTIME (the `vim.*` API) and adds a plugin's types only when a file

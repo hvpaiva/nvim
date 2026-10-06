@@ -92,6 +92,10 @@
       "rev": "683c1787d13be37fc4517f4b7488212205c95545",
       "src": "https://github.com/tris203/precognition.nvim"
     },
+    "quicker.nvim": {
+      "rev": "4a6883cb13fe097a20a046eb55f6dffd239276e3",
+      "src": "https://github.com/stevearc/quicker.nvim"
+    },
     "render-markdown.nvim": {
       "rev": "5adf0895310c1904e5abfaad40a2baad7fe44a07",
       "src": "https://github.com/MeanderingProgrammer/render-markdown.nvim"
