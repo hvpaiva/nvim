@@ -270,6 +270,92 @@ for name in pairs(heredocs) do
     vim.bo.modified = false
 end
 
+-- Ruby and shell editing helpers ---------------------------------------------
+local helpers = project("helpers", {
+    ["widget.rb"] = table.concat({
+        "class Widget",
+        "  def items",
+        "    [1, 2].map { |i| i * 2 }",
+        "  end",
+        "",
+        "  def each_twice",
+        "    [1, 2].each do |i|",
+        "      puts i",
+        "    end",
+        "  end",
+        "end",
+    }, "\n"),
+    ["pipe.sh"] = table.concat({
+        "#!/usr/bin/env bash",
+        "if true; then",
+        "  jq -r '.items[] | .name' data.json",
+        "  awk -F: '{ print $1 }' /etc/passwd",
+        "fi",
+    }, "\n"),
+})
+
+local function yank(keys, row, col)
+    vim.api.nvim_win_set_cursor(0, { row, col })
+    vim.fn.setreg('"', "")
+    vim.api.nvim_feedkeys(keys, "x", false)
+    return vim.fn.getreg('"')
+end
+
+vim.cmd.edit(vim.fn.fnameescape(helpers .. "/widget.rb"))
+check(yank("yao", 8, 6):match("^%[1, 2%]%.each do |i|") == nil, "ao on the block, not the line")
+check(vim.startswith(vim.trim(yank("yao", 8, 6)), "do |i|"), "ao selects the do block around the cursor")
+check(vim.startswith(yank("yac", 8, 6), "class Widget"), "ac selects the class")
+check(vim.fn.maparg("gS", "n", false, true).buffer == 1, "Ruby buffers split/join with treesj")
+check(vim.fn.maparg(" fp", "n", false, true).desc == "Project gems (ruby-lsp)", "gems picker in Ruby buffers")
+vim.api.nvim_win_set_cursor(0, { 3, 18 })
+vim.api.nvim_feedkeys("gS", "x", false)
+local split = vim.api.nvim_buf_get_lines(0, 2, 5, false)
+check(
+    vim.trim(split[1]) == "[1, 2].map do |i|" and vim.trim(split[3]) == "end",
+    "gS turns a brace block into do...end: " .. vim.inspect(split)
+)
+vim.api.nvim_win_set_cursor(0, { 3, (split[1]:find(" do ")) })
+vim.api.nvim_feedkeys("gS", "x", false)
+check(vim.trim(vim.api.nvim_buf_get_lines(0, 2, 3, false)[1]) == "[1, 2].map { |i| i * 2 }", "and back")
+vim.bo.modified = false
+
+vim.cmd.edit(vim.fn.fnameescape(helpers .. "/pipe.sh"))
+check(vim.trim(yank("yao", 3, 4)):match("^if true; then"), "ao selects the shell if")
+local parser = vim.treesitter.get_parser(0)
+parser:parse(true)
+local injected = parser:children()
+check(injected.jq and injected.awk, "jq and awk programs are parsed as their languages")
+
+local gems = ruby.gem_items({
+    { name = "rake", version = "13.0", dependency = false, path = "/g/rake" },
+    { name = "minitest", version = "6.0", dependency = true, path = "/g/minitest" },
+})
+check(gems[1].text == "minitest 6.0" and gems[2].text == "rake 13.0  (transitive)", "gems: direct first, marked")
+
+local repl = require("repl")
+vim.cmd.edit(vim.fn.fnameescape(helpers .. "/widget.rb"))
+local cmd, cwd = repl.target()
+check(cmd[#cmd] == "irb" and cwd == helpers, "Ruby REPL is irb from the project root")
+vim.cmd.edit(vim.fn.fnameescape(helpers .. "/pipe.sh"))
+vim.api.nvim_buf_set_lines(0, 5, 5, false, { "", "echo repl_$((40 + 2))", "echo second" })
+check(#repl.paragraph(7) == 2, "paragraph around the cursor")
+repl.send(repl.paragraph(7))
+local terminal
+vim.wait(10000, function()
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.bo[buf].buftype == "terminal" then
+            local text = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
+            if text:find("repl_42", 1, true) and text:find("\nsecond", 1, true) then
+                terminal = buf
+                return true
+            end
+        end
+    end
+end, 100)
+check(terminal, "the shell REPL runs what is sent")
+vim.fn.jobstop(vim.bo[terminal].channel)
+vim.bo.modified = false
+
 -- mini.snippets' in-process server speaks byte offsets ------------------------
 local snippet_client = vim.lsp.get_clients({ name = "mini.snippets" })[1]
 check(snippet_client and snippet_client.offset_encoding == "utf-8", "snippet server encoding")
