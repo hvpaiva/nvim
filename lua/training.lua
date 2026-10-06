@@ -13,6 +13,10 @@ require("hardtime").setup({
     hint = true,
     notification = true,
     allow_different_key = true,
+    -- Merged into hardtime's own list. Browsing these is line-by-line by
+    -- nature: fugitive's log and diff buffers (`git`), blame, and the
+    -- debugger's floating widgets and REPL.
+    disabled_filetypes = { "git", "fugitiveblame", "dap-float", "dap-repl" },
 })
 
 require("precognition").setup({
