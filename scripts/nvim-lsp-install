@@ -61,6 +61,8 @@ tools=(
     "npm:gh-actions-language-server"
     "npm:typescript-language-server"
     "npm:typescript"
+    "npm:basedpyright"
+    ruff
 )
 
 # One `mise use -g` per tool, on purpose: the multi-argument form is atomic, so

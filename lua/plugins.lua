@@ -98,6 +98,7 @@ require("conform").setup({
         ["markdown.mdx"] = { "prettier" },
         ruby = ruby.formatters,
         go = { "goimports", lsp_format = "last" },
+        python = { "ruff_organize_imports", "ruff_format" },
     },
 })
 
