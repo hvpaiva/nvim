@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-mise use -g 'gem:debug@latest'
+# Ruby needs nothing here: rdbg ships with every Ruby (the bundled debug gem)
+# and lua/debugging.lua runs the project's Ruby's own.
 mise use -g 'go:github.com/go-delve/delve/cmd/dlv@latest'
 mise use -g 'pipx:debugpy@latest'
 mise use -g 'github:microsoft/vscode-js-debug[asset_pattern=js-debug-dap-*.tar.gz]@latest'

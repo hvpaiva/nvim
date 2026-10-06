@@ -13,6 +13,10 @@ local function root()
     }) or vim.fn.getcwd()
 end
 
+-- rdbg comes from the project's Ruby (`mise x` resolves it from the working
+-- directory, as for ruby-lsp): the debug gem it injects is a C extension tied
+-- to that Ruby's ABI. The file runs with Ruby or RSpec, under Bundler when the
+-- project has a Gemfile.
 dap.adapters.ruby = function(callback, config)
     local args = { "--open", "--host", "127.0.0.1", "--port", "${port}", "-c", "--" }
     if require("ruby_tools").bundle_root(config.program) then
@@ -21,11 +25,15 @@ dap.adapters.ruby = function(callback, config)
     vim.list_extend(args, config.runner == "rspec" and { "rspec" } or { "ruby", "-Ilib", "-Itest" })
     args[#args + 1] = config.program
     vim.list_extend(args, config.args or {})
+    local command = "rdbg"
+    if vim.fn.executable("mise") == 1 then
+        command, args = "mise", vim.list_extend({ "x", "--", "rdbg" }, args)
+    end
     callback({
         type = "server",
         host = "127.0.0.1",
         port = "${port}",
-        executable = { command = "rdbg", args = args, cwd = config.cwd },
+        executable = { command = command, args = args, cwd = config.cwd },
     })
 end
 
