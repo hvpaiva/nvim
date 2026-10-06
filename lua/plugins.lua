@@ -75,6 +75,19 @@ require("conform").setup({
     formatters = {
         rubocop = ruby.formatter("rubocop", "rubocop"),
         standardrb = ruby.formatter("standardrb", "standard"),
+        -- A project's .editorconfig wins (shfmt reads it when given no style
+        -- flags). Otherwise Google's shell style: the buffer's indent, `case`
+        -- bodies indented, binary operators starting the continuation line.
+        shfmt = {
+            args = function(_, ctx)
+                local args = { "-filename", "$FILENAME" }
+                if vim.fs.find(".editorconfig", { path = ctx.dirname, upward = true })[1] then
+                    return args
+                end
+                local indent = vim.bo[ctx.buf].expandtab and tostring(ctx.shiftwidth) or "0"
+                return vim.list_extend(args, { "-i", indent, "-ci", "-bn" })
+            end,
+        },
     },
     formatters_by_ft = {
         lua = { "stylua" },
