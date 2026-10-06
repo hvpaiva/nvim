@@ -7,6 +7,13 @@
 -- ~/.config/shellcheckrc, shared with the CLI); formatting is conform + shfmt.
 
 return {
+    settings = {
+        bashIde = {
+            -- Complete and rename functions from every indexed script, not only
+            -- the ones a file sources statically (`source "$dir/lib.sh"`).
+            includeAllWorkspaceSymbols = true,
+        },
+    },
     -- `settings` is the table the client serves to the server, so a nested
     -- field set here is what bash-language-server reads.
     before_init = function(_, config)

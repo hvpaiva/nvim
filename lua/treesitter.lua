@@ -5,6 +5,7 @@
 local treesitter = require("nvim-treesitter")
 
 local ensure_installed = {
+    "awk",
     "bash",
     "c",
     "css",
@@ -30,6 +31,7 @@ local ensure_installed = {
     "hyprlang",
     "javascript",
     "jsdoc",
+    "jq",
     "json",
     "json5",
     "just",
