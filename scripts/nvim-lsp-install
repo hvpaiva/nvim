@@ -44,6 +44,7 @@ tools=(
     "github:tfausak/cabal-gild@latest"
     "go:golang.org/x/tools/gopls"
     shfmt
+    shellcheck
     "github:docker/docker-language-server"
     helm-ls
     lua-language-server
