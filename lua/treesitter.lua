@@ -42,6 +42,7 @@ local ensure_installed = {
     "printf",
     "python",
     "query",
+    "rbs",
     "regex",
     "ron",
     "ruby",
