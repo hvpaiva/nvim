@@ -146,6 +146,7 @@ miniclue.setup({
         { mode = "n", keys = "<Leader>e", desc = "+Explore/Edit" },
         { mode = "n", keys = "<Leader>f", desc = "+Find" },
         { mode = "n", keys = "<Leader>g", desc = "+Git" },
+        { mode = "n", keys = "<Leader>i", desc = "+REPL" },
         { mode = "n", keys = "<Leader>o", desc = "+Other" },
         { mode = "n", keys = "<Leader>s", desc = "+Session" },
         { mode = "n", keys = "<Leader>p", desc = "+Practice" },
