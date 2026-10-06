@@ -25,7 +25,7 @@ The UI is transparent. Background colors in these screenshots come from the term
 - `ripgrep`
 - `diff`
 - A C toolchain for Tree-sitter parsers
-- Toolchains used by the install script: `go` (gopls, shfmt, docker-language-server), `rustup` (rust-analyzer), `mise` (Ruby, standardrb, rubocop, ShellCheck), `npm` (prettier and the YAML, JSON, shell, GitHub Actions and TypeScript servers)
+- Toolchains used by the install script: `go` (gopls, goimports, shfmt, docker-language-server), `rustup` (rust-analyzer), `mise` (Ruby, standardrb, rubocop, ShellCheck, ruff, Terraform, terraform-ls, TFLint, taplo, golangci-lint), `npm` (prettier, basedpyright and the YAML, JSON, ESLint, shell, GitHub Actions and TypeScript servers)
 - For Bash debugging, `bashdb` built for the running Bash (my [dotfiles](https://github.com/hvpaiva/dotfiles) build it into `~/.local`)
 
 ## Install
@@ -38,7 +38,7 @@ git clone https://github.com/hvpaiva/nvim ~/.config/nvim
 nvim
 ```
 
-Plugins are installed by Neovim through `vim.pack` on startup.
+Plugins are installed by Neovim through `vim.pack` on startup, at the revisions in `nvim-pack-lock.json`. Plugins the config no longer adds (one removed here, an Omarchy theme no longer in use) are deleted on startup, so the lockfile follows the config on every machine.
 
 To install or refresh the external language tooling I use:
 
@@ -46,9 +46,11 @@ To install or refresh the external language tooling I use:
 ~/.config/nvim/scripts/nvim-lsp-install
 ```
 
-This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `helm_ls`, `yaml-language-server`, `vscode-json-language-server`, `bash-language-server`, `gh-actions-language-server`, `docker-language-server`, `typescript-language-server`), the Lua formatter (`stylua`), the shell formatter (`shfmt`) and linter (`shellcheck`), the Markdown formatter (`prettier`, via `npm`), and the Ruby formatters (`standardrb`, `rubocop`, via `mise` gem backend). It also installs `ruby-lsp` into every Ruby mise has (see below). Conform picks up a project-local `node_modules/.bin/prettier` when present.
+This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `helm_ls`, `yaml-language-server`, `vscode-json-language-server`, `vscode-eslint-language-server`, `bash-language-server`, `gh-actions-language-server`, `docker-language-server`, `typescript-language-server`, `basedpyright`, `ruff`, `terraform-ls`, `tflint`, `taplo`), the formatters (`stylua`, `shfmt`, `prettier`, `goimports`, `ruff`, `terraform fmt`, `taplo`, and the Ruby `standardrb` and `rubocop` via the `mise` gem backend) and the linters (`shellcheck`, `golangci-lint`). It also installs `ruby-lsp` into every Ruby mise has (see below). Conform picks up a project-local `node_modules/.bin/prettier` when present.
 
-Native LSP on-type formatting is enabled for every server that supports it, including Ruby's automatic `end` insertion.
+Code lenses and on-type formatting come only from the servers whose lenses `gl` can act on and whose as-you-type edits are the point: ruby-lsp (tests, `end` insertion), rust-analyzer (run, debug, references), terraform-ls (references) and gopls (`go.mod` and `go:generate` commands). Elsewhere they would only add "N references" noise or reformat lines against the project formatter.
+
+`gq{motion}` formats code through Conform, and wraps text in prose (Markdown, commit messages, plain text), in comment-only ranges and wherever nothing formats; `gQ` formats the whole buffer; `gw` always wraps.
 
 The script also installs GHC and HLS through the `mise-ghcup` backend, plus Cabal, Stack, Ormolu, HLint, and `cabal-gild` through mise. It registers the backend, enables mise's experimental backend support, and selects `latest` for these Haskell tools.
 
@@ -73,7 +75,32 @@ ruby-lsp's test code lenses work: `gl` on a test runs it in the same terminal as
 
 Vim's Ruby and shell indent scripts need the regex syntax to leave strings and heredocs alone, so those filetypes keep it loaded under tree-sitter; `=` never changes a string's value. For shell, `gQ` (shfmt) is still the better reindent.
 
-Shell scripts get `bash-language-server` with ShellCheck diagnostics and quick fixes; its optional checks come from `~/.config/shellcheckrc`, shared with the CLI. Inside a project the server indexes the whole tree for cross-file definitions. `shfmt` follows a project's `.editorconfig`, and Google's style otherwise (`-ci -bn`, the buffer's indent). friendly-snippets' shell snippets load in `sh`, `bash` and `zsh` buffers.
+Shell scripts get `bash-language-server` with ShellCheck diagnostics and quick fixes; its optional checks come from `~/.config/shellcheckrc`, shared with the CLI. Inside a project the server indexes the whole tree for cross-file definitions and offers functions from every script. `shfmt` follows a project's `.editorconfig`, and Google's style otherwise (`-ci -bn`, the buffer's indent). friendly-snippets' shell snippets load in `sh`, `bash` and `zsh` buffers. The single-quoted programs of `jq`, `yq` and `awk` are highlighted as those languages. Saving a file with a shebang makes it executable.
+
+Editing helpers for both:
+
+| Keys | Action |
+| --- | --- |
+| `ao` / `io` | Block, conditional or loop (`do ... end`, `{ }`, shell `if`/`for`/`while`) |
+| `ac` / `ic` | Class |
+| `van` / `vin` | Grow / shrink the selection along the syntax tree (`aN`/`iN` are mini.ai's "next") |
+| `gS` (Ruby) | Split/join blocks, modifier conditionals and literals (treesj) |
+| `<Space>fp` (Ruby) | Pick one of the project's gems and open its directory |
+| `<Space>ii` | Open the REPL: irb under the project's Ruby, python3, or the shell |
+| `<Space>il` / `<Space>ip` | Send the line / paragraph to the REPL |
+| `<Space>i` (visual) | Send the selection to the REPL |
+
+## Other languages
+
+- **Python**: basedpyright for types (it resolves the project's `.venv`), ruff for lint, import sorting and formatting.
+- **Terraform**: terraform-ls and TFLint, `terraform fmt`; `.tf` files are always Terraform, even when new.
+- **TOML**: taplo, with schemas for `Cargo.toml`, `pyproject.toml` and others.
+- **Go**: gopls with gofumpt, staticcheck and inlay hints; `gQ` runs goimports first. golangci-lint runs where the project has a `.golangci.*` config.
+- **JavaScript/TypeScript**: ESLint where the project configures it; prettier formats web sources only when the project has a prettier config, the language server otherwise.
+- **JSON and YAML**: SchemaStore's catalog validates known files (`package.json`, `tsconfig.json`, `Chart.yaml`, compose files...). GitHub workflows are left to the GitHub Actions server. Kubernetes manifests and Helm templates validate against the same Kubernetes version.
+- **Docker**: compose files (`compose.yaml`, `docker-compose.*.yml`) and Bake files get docker-language-server alongside the YAML server.
+
+The quickfix list is editable (quicker.nvim): change lines and `:w` to apply them to the files, `>` / `<` to show or hide context. Markdown spell checking builds its programming and personal word lists by itself (from vim-dirtytalk and `spell/custom.words`) and downloads missing languages without asking.
 
 ## Structure
 
@@ -86,8 +113,12 @@ lua/mini.lua         mini.nvim modules
 lua/training.lua     motion training tools and coaching toggles
 lua/workflow.lua     test runners and source/test navigation
 lua/debugging.lua    DAP adapters and shared debugging mappings
-lua/ruby_tools.lua   Ruby style, lint ownership, test lenses
-lua/spell.lua        spell dictionaries and update commands
+lua/ruby_tools.lua   Ruby style, lint ownership, test lenses, gems picker
+lua/rust_tools.lua   rust-analyzer run/debug lenses
+lua/lenses.lua       shared code lens commands
+lua/formatexpr.lua   gq: format code, wrap prose and comments
+lua/repl.lua         REPL terminal fed from the buffer
+lua/spell.lua        spell dictionaries, built on demand
 lua/theme.lua        colorscheme and highlights
 lua/treesitter.lua   Tree-sitter setup
 lua/lsp.lua          native LSP setup
@@ -174,13 +205,20 @@ stylua --check .
 shellcheck scripts/*
 nvim --headless -u NONE -n -i NONE -l tests/workflow.lua
 NVIM_DEBUG_TEST_LANGUAGE=ruby nvim --headless -u NONE -n -i NONE -l tests/debugging.lua
-nvim --headless -i NONE --cmd 'let g:minivisits_disable = v:true' -c 'luafile tests/languages.lua'
+for t in languages editing; do
+  nvim --headless -i NONE --cmd 'let g:minivisits_disable = v:true' \
+    -c "lua local ok, err = xpcall(dofile, debug.traceback, 'tests/$t.lua') if not ok then io.stderr:write(err, '\\n') vim.cmd('cquit 1') end"
+done
 ```
 
 The workflow checks use temporary fixtures and capture commands without running
 project tests. Debugging checks launch temporary programs and verify a breakpoint,
 value inspection, and stepping. The debug selector also accepts `ruby_bundle`,
 `go`, `rust`, `python`, `javascript`, `typescript`, and `bash`; each requires its
-toolchain and adapter. The language checks load the full config against temporary
-Ruby and shell fixtures: style and lint ownership, test lenses, ruby-lsp and bashls
-settings, shfmt style, shell snippets, and indentation that keeps string bodies.
+toolchain and adapter. The language and editing checks load the full config
+against temporary fixtures (the loop above fails instead of hanging on an error).
+Language checks cover Ruby and shell: style and lint ownership, test lenses,
+ruby-lsp and bashls settings, shfmt style, shell snippets, text objects, treesj,
+injections, the REPL, and indentation that keeps string bodies. Editing checks
+cover the rest: mappings, `gq`, folds, spell lists, filetypes, the language
+servers' settings, formatters and the code lens commands.
