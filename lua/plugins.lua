@@ -60,19 +60,21 @@ vim.g.undotree_DiffAutoOpen = 1
 vim.g.undotree_SetFocusWhenToggle = 1
 
 -- conform.nvim: per-filetype formatters. Lua + Markdown get explicit external
--- formatters; Ruby is project-detected (Standard vs RuboCop). For Go and Rust
--- the LSP formats and conform falls back to it via `lsp_format = "fallback"`.
+-- formatters; Ruby is project-detected (Standard vs RuboCop, see
+-- lua/ruby_tools.lua, which linting follows too). For Go and Rust the LSP
+-- formats and conform falls back to it via `lsp_format = "fallback"`.
 -- ruby-lsp is told not to format (see after/lsp/ruby_lsp.lua) so the choice
 -- below is the single source of truth for Ruby. Formatting is invoked via
 -- the native `gq{motion}` operator (formatexpr wired below) and `gQ` for the
 -- whole buffer (see keymaps.lua). External tooling (prettier, rubocop,
 -- standardrb) is installed by scripts/nvim-lsp-install; project-bundled
 -- versions override these when present.
+local ruby = require("ruby_tools")
 require("conform").setup({
     default_format_opts = { lsp_format = "fallback" },
     formatters = {
-        rubocop = require("ruby_tools").formatter("rubocop", "rubocop"),
-        standardrb = require("ruby_tools").formatter("standardrb", "standard"),
+        rubocop = ruby.formatter("rubocop", "rubocop"),
+        standardrb = ruby.formatter("standardrb", "standard"),
     },
     formatters_by_ft = {
         lua = { "stylua" },
@@ -81,22 +83,7 @@ require("conform").setup({
         haskell = { "ormolu" },
         markdown = { "prettier" },
         ["markdown.mdx"] = { "prettier" },
-        -- Ruby: prefer Standard if the project ships a Standard config,
-        -- then RuboCop if it ships a RuboCop config, then fall back to
-        -- Standard (matches modern Ruby ecosystem convention).
-        ruby = function(bufnr)
-            local path = vim.api.nvim_buf_get_name(bufnr)
-            local has_standard = vim.fs.find({ ".standard.yml", "standard.yml" }, { upward = true, path = path })[1]
-            if has_standard then
-                return { "standardrb" }
-            end
-            local has_rubocop =
-                vim.fs.find({ ".rubocop.yml", ".rubocop_todo.yml", "rubocop.yml" }, { upward = true, path = path })[1]
-            if has_rubocop then
-                return { "rubocop" }
-            end
-            return { "standardrb" }
-        end,
+        ruby = ruby.formatters,
     },
 })
 
@@ -105,23 +92,40 @@ require("conform").setup({
 -- as the explicit `gQ` mapping in keymaps.lua.
 vim.o.formatexpr = "v:lua.require'conform'.formatexpr()"
 
+-- nvim-lint covers what no language server lints: HLint for Haskell, and Ruby
+-- files whose bundle does not carry their linter (ruby-lsp lints the others;
+-- ruby_tools.lint_plan decides which side owns a file).
 local lint = require("lint")
+lint.linters.ruby_standardrb = ruby.linter("standardrb")
+lint.linters.ruby_rubocop = ruby.linter("rubocop")
 lint.linters_by_ft = {
     haskell = { "hlint" },
     lhaskell = { "hlint" },
 }
+local haskell_root = { ".hlint.yaml", "hie.yaml", "cabal.project", "stack.yaml", ".git" }
+
+local function linters_for(buf, path)
+    local ft = vim.bo[buf].filetype
+    if ft == "ruby" then
+        local editor = ruby.lint_plan(path).editor
+        return editor and { "ruby_" .. editor }, ruby.bundle_root(path)
+    end
+    return lint.linters_by_ft[ft], vim.fs.root(buf, haskell_root)
+end
+
 vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
-    group = vim.api.nvim_create_augroup("hvpaiva-haskell-lint", { clear = true }),
+    group = vim.api.nvim_create_augroup("hvpaiva-lint", { clear = true }),
     callback = function(ev)
         local path = vim.api.nvim_buf_get_name(ev.buf)
-        if not lint.linters_by_ft[vim.bo[ev.buf].filetype] or vim.fn.filereadable(path) == 0 then
+        if vim.fn.filereadable(path) == 0 then
+            return
+        end
+        local names, cwd = linters_for(ev.buf, path)
+        if not names then
             return
         end
         vim.api.nvim_buf_call(ev.buf, function()
-            lint.try_lint(nil, {
-                cwd = vim.fs.root(ev.buf, { ".hlint.yaml", "hie.yaml", "cabal.project", "stack.yaml", ".git" })
-                    or vim.fs.dirname(path),
-            })
+            lint.try_lint(names, { cwd = cwd or vim.fs.dirname(path) })
         end)
     end,
 })

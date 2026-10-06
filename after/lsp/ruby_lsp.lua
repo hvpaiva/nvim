@@ -1,6 +1,8 @@
 -- ruby-lsp: run under the project's Ruby, tuned for mini.completion.
 -- Formatting is owned by conform.nvim (lua/ruby_tools.lua picks Standard or
 -- RuboCop per project); ruby-lsp is told to stay out of it.
+local ruby = require("ruby_tools")
+
 local launcher = vim.fn.stdpath("config") .. "/scripts/nvim-ruby-lsp"
 
 return {
@@ -27,4 +29,15 @@ return {
     init_options = {
         formatter = "none",
     },
+    -- ruby-lsp only detects RuboCop on its own. Standard projects get the
+    -- Standard add-on (it ships in the standard gem); projects whose bundle
+    -- lacks their linter get none here and are linted by nvim-lint instead.
+    before_init = function(params, config)
+        if config.root_dir then
+            local linters = ruby.lint_plan(config.root_dir .. "/Gemfile").linters
+            if linters then
+                params.initializationOptions.linters = linters
+            end
+        end
+    end,
 }
