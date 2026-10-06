@@ -49,7 +49,6 @@ tools=(
     lua-language-server
     marksman
     stylua
-    "gem:ruby-lsp"
     "gem:standard"
     "gem:rubocop"
     prettier
@@ -76,13 +75,26 @@ done
 # Gem shims carry the ruby they were built against in their shebang. If that
 # ruby is gone the shim resolves but cannot run, so reinstall against the
 # current one.
-for bin in ruby-lsp standardrb rubocop; do
+for bin in standardrb rubocop; do
     if have "$bin" && ! "$bin" --version >/dev/null 2>&1; then
         warn "$bin shim broken (host ruby gone), reinstalling"
         mise install --force "gem:${bin/standardrb/standard}" || failed+=("$bin")
     fi
 done
 mise reshim 2>/dev/null || true
+
+# ruby-lsp is not a mise tool: its C extensions are built for one Ruby ABI, so
+# it lives inside every Ruby (mise installs it with each new one from
+# ~/.config/mise/default-gems, and scripts/nvim-ruby-lsp installs it on first
+# use). Fill in the Rubies installed before that, so no first start waits.
+rubies=$(mise ls --installed --no-header ruby 2>/dev/null | awk '{ print $2 }')
+while read -r version; do
+    [[ -n $version ]] || continue
+    if [[ $force == --force ]] || ! mise x "ruby@$version" -- gem list -i ruby-lsp >/dev/null 2>&1; then
+        say "ruby-lsp in ruby $version"
+        mise x "ruby@$version" -- gem install --no-document --no-user-install ruby-lsp || failed+=("ruby-lsp (ruby $version)")
+    fi
+done <<<"$rubies"
 
 echo
 if (( ${#failed[@]} == 0 )); then

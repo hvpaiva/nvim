@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Start ruby-lsp with the Ruby on PATH, installing the gem into that Ruby first
+# when it is missing. Neovim runs this through `mise x`, so the Ruby on PATH is
+# the one the project selects (.ruby-version, mise.toml), not the one Neovim
+# was started with.
+#
+# ruby-lsp depends on C extensions (prism, rbs) built against the Ruby ABI, so
+# it has to live inside the Ruby that runs it. mise's default gems file
+# (~/.config/mise/default-gems) installs it with every new Ruby; this covers
+# the Rubies that predate it or a machine where that step failed.
+#
+# stdout is the LSP channel: everything this script says goes to stderr, which
+# Neovim writes to its LSP log.
+
+paths=$(ruby -e 'print Gem.bindir, "\n", RbConfig.ruby') || {
+    printf 'nvim-ruby-lsp: no working ruby on PATH\n' >&2
+    exit 1
+}
+{
+    read -r bindir
+    read -r ruby_bin
+} <<<"$paths"
+
+if [[ ! -x $bindir/ruby-lsp ]]; then
+    # Two editors opening Ruby at once must not install the same gem twice.
+    lock=${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/nvim-ruby-lsp-$(id -u).lock
+    exec 9>"$lock"
+    flock 9
+    if [[ ! -x $bindir/ruby-lsp ]]; then
+        printf 'nvim-ruby-lsp: installing ruby-lsp into %s\n' "$ruby_bin" >&2
+        gem install --no-document --no-user-install ruby-lsp >&2 || exit 1
+    fi
+    exec 9>&-
+fi
+
+exec "$bindir/ruby-lsp" "$@"
