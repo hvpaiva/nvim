@@ -63,6 +63,20 @@ treesitter.install(ensure_installed)
 -- Helm values files are plain YAML under a compound filetype (see options.lua).
 vim.treesitter.language.register("yaml", "yaml.helm-values")
 
+local ts_foldexpr = "v:lua.vim.treesitter.foldexpr()"
+
+-- Window-local fold options outlive the buffer that set them: a buffer without
+-- a parser shown in a window that held one with a parser would keep the
+-- tree-sitter foldexpr and get no folds at all.
+local function default_folds(buf)
+    vim.api.nvim_buf_call(buf, function()
+        if vim.wo.foldexpr == ts_foldexpr then
+            vim.opt_local.foldmethod = vim.go.foldmethod
+            vim.opt_local.foldexpr = vim.go.foldexpr
+        end
+    end)
+end
+
 -- `vim.treesitter.start` clears 'syntax'. Vim's Ruby and shell indent scripts
 -- read synID() to leave string and heredoc bodies alone, so without the regex
 -- syntax underneath `=` reindents them and changes the string's value. These
@@ -75,13 +89,11 @@ vim.api.nvim_create_autocmd("FileType", {
         local buf = args.buf
         local ft = vim.bo[buf].filetype
 
+        -- `language.add` returns nil (it does not raise) when no parser exists.
         local lang = vim.treesitter.language.get_lang(ft)
-        if not lang then
-            return
-        end
-
-        local ok_add = pcall(vim.treesitter.language.add, lang)
-        if not ok_add then
+        local ok_add, added = pcall(vim.treesitter.language.add, lang or "")
+        if not lang or not ok_add or not added then
+            default_folds(buf)
             return
         end
 
@@ -89,14 +101,13 @@ vim.api.nvim_create_autocmd("FileType", {
             vim.bo[buf].syntax = "ON"
         end
 
-        -- Use tree-sitter folds wherever the parser is available, falling
-        -- back to the global `indent` method for filetypes without one.
-        -- Skip filetypes that already set their own foldmethod in ftplugin
-        -- (currently only markdown via after/ftplugin/markdown.lua).
+        -- Tree-sitter folds wherever the parser is available; filetypes without
+        -- one keep the global `indent` method (default_folds above). Markdown
+        -- sets its own in after/ftplugin/markdown.lua.
         if ft ~= "markdown" then
             vim.api.nvim_buf_call(buf, function()
                 vim.opt_local.foldmethod = "expr"
-                vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+                vim.opt_local.foldexpr = ts_foldexpr
             end)
         end
     end,
