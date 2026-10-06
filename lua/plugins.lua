@@ -5,7 +5,7 @@
 --   1. `vim.pack.add` registers every external plugin so subsequent `require`s
 --      can resolve them. Must run before mini.lua / theme.lua / treesitter.lua
 --      / lsp.lua, all of which `require` plugin modules.
---   2. Sets up editing plugins that don't fit in mini.lua: conform,
+--   2. Sets up editing plugins that don't fit in mini.lua: conform, nvim-lint,
 --      treesitter-context, nvim-highlight-colors, todo-comments.
 --   3. Exposes `:PackUpdate` to refresh plugins.
 -- Mini.* setups live in `lua/mini.lua`; training tools in `lua/training.lua`;
@@ -100,10 +100,10 @@ require("conform").setup({
     },
 })
 
--- Route the native `gq{motion}` operator through conform, so motion-based
--- formatting (gqip, gqap, gqG, visual + gq) uses the same formatter stack
--- as the explicit `gQ` mapping in keymaps.lua.
-vim.o.formatexpr = "v:lua.require'conform'.formatexpr()"
+-- `gq{motion}` formats code through conform and wraps prose and comments
+-- (lua/formatexpr.lua); autocmds.lua reasserts it when a language server
+-- attaches.
+vim.o.formatexpr = require("formatexpr").option
 
 -- nvim-lint covers what no language server lints: HLint for Haskell, and Ruby
 -- files whose bundle does not carry their linter (ruby-lsp lints the others;
