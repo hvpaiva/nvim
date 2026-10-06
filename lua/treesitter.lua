@@ -60,8 +60,10 @@ local ensure_installed = {
 
 treesitter.install(ensure_installed)
 
--- Helm values files are plain YAML under a compound filetype (see options.lua).
-vim.treesitter.language.register("yaml", "yaml.helm-values")
+-- Compound filetypes from options.lua: Helm values and Compose files are YAML,
+-- Docker Bake files HCL.
+vim.treesitter.language.register("yaml", { "yaml.helm-values", "yaml.docker-compose" })
+vim.treesitter.language.register("hcl", "hcl.docker-bake")
 
 local ts_foldexpr = "v:lua.vim.treesitter.foldexpr()"
 

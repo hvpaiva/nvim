@@ -31,6 +31,9 @@ local function helm_values(path)
 end
 
 -- Register custom filetypes that Neovim does not detect by default.
+-- Compose and Bake files get the compound filetypes docker-language-server
+-- serves (yamlls still attaches to `yaml.*`): `compose.yaml`,
+-- `docker-compose.prod.yml`, `docker-bake.override.hcl`, and so on.
 vim.filetype.add({
     extension = {
         gotmpl = "gotmpl",
@@ -44,6 +47,11 @@ vim.filetype.add({
         [".*/templates/.*%.tpl"] = helm_template,
         [".*/templates/NOTES%.txt"] = helm_template,
         [".*/values.*%.ya?ml"] = helm_values,
+        [".*/compose%.ya?ml"] = "yaml.docker-compose",
+        [".*/compose%.[%w%-]+%.ya?ml"] = "yaml.docker-compose",
+        [".*/docker%-compose%.ya?ml"] = "yaml.docker-compose",
+        [".*/docker%-compose%.[%w%-]+%.ya?ml"] = "yaml.docker-compose",
+        [".*/docker%-bake[%w%.%-]*%.hcl"] = "hcl.docker-bake",
     },
 })
 
