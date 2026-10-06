@@ -12,14 +12,6 @@
       "rev": "567efb778534e11ee1072d4fe27178f705a27d8a",
       "src": "https://github.com/bjarneo/aether.nvim"
     },
-    "ashen.nvim": {
-      "rev": "bfb04bd50b69d863469b2deb9fb361cf0d945ba7",
-      "src": "https://github.com/ficcdaf/ashen.nvim"
-    },
-    "bamboo.nvim": {
-      "rev": "1309bc88bffcf1bedc3e84e7fa9004de93da774a",
-      "src": "https://github.com/ribru17/bamboo.nvim"
-    },
     "conform.nvim": {
       "rev": "18aeab3d63d350dcf44d64c462cc489a3412af40",
       "src": "https://github.com/stevearc/conform.nvim"
@@ -35,10 +27,6 @@
     "lazydev.nvim": {
       "rev": "ff2cbcba459b637ec3fd165a2be59b7bbaeedf0d",
       "src": "https://github.com/folke/lazydev.nvim"
-    },
-    "matteblack.nvim": {
-      "rev": "a8a039f5d6189b28d76fa0221e64965efec7e996",
-      "src": "https://github.com/tahayvr/matteblack.nvim"
     },
     "mini.nvim": {
       "rev": "6791615e48801cbf5b2baefadcea77a7760de3f4",
@@ -100,17 +88,9 @@
       "rev": "5adf0895310c1904e5abfaad40a2baad7fe44a07",
       "src": "https://github.com/MeanderingProgrammer/render-markdown.nvim"
     },
-    "retro-82.nvim": {
-      "rev": "41b8c42ed0099eb43824903ef606a6b051d33505",
-      "src": "https://github.com/OldJobobo/retro-82.nvim"
-    },
     "todo-comments.nvim": {
       "rev": "31e3c38ce9b29781e4422fc0322eb0a21f4e8668",
       "src": "https://github.com/folke/todo-comments.nvim"
-    },
-    "tokyonight.nvim": {
-      "rev": "cdc07ac78467a233fd62c493de29a17e0cf2b2b6",
-      "src": "https://github.com/folke/tokyonight.nvim"
     },
     "treesj": {
       "rev": "9f349ba62c524f065d6f43254d731ddf8319b9bf",

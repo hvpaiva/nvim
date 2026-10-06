@@ -195,7 +195,8 @@ require("todo-comments").setup({ signs = false })
 -- render-markdown.nvim: in-buffer rendering of markdown (headings, tables,
 -- code blocks, callouts, checkboxes). Off by default; toggle with
 -- `<Leader>om` (keymaps.lua) when reading or reviewing.
-require("render-markdown").setup({ enabled = false })
+-- LaTeX rendering needs a parser and a converter this config does not use.
+require("render-markdown").setup({ enabled = false, latex = { enabled = false } })
 
 -- oil.nvim: edit the filesystem like a normal buffer. `-` opens the parent
 -- directory; rename/create/delete by editing lines and `:w` to apply.
@@ -226,6 +227,30 @@ require("lazydev").setup({
 -- ============================================================================
 -- Plugin manager commands
 -- ============================================================================
+
+-- vim.pack syncs the lockfile and the disk both ways: a plugin still on disk
+-- is written back into the (versioned) lockfile on the next start. Delete the
+-- ones no `vim.pack.add()` asked for this session (a plugin dropped from this
+-- file, an Omarchy theme no longer in use), so removing a plugin here removes
+-- it on every machine. They come back from the lockfile or the next add.
+-- `vim.pack.del` refuses active plugins.
+vim.api.nvim_create_autocmd("VimEnter", {
+    group = vim.api.nvim_create_augroup("hvpaiva-pack-prune", { clear = true }),
+    desc = "Delete plugins nothing added",
+    callback = vim.schedule_wrap(function()
+        local unused = vim.iter(vim.pack.get())
+            :filter(function(plugin)
+                return not plugin.active
+            end)
+            :map(function(plugin)
+                return plugin.spec.name
+            end)
+            :totable()
+        if #unused > 0 then
+            vim.pack.del(unused)
+        end
+    end),
+})
 
 -- :PackUpdate            update everything
 -- :PackUpdate name1 name2  update only those
