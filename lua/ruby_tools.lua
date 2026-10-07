@@ -161,6 +161,23 @@ function M.formatters(bufnr)
     return { M.style(vim.api.nvim_buf_get_name(bufnr)) == "standard" and "standardrb" or "rubocop" }
 end
 
+-- RuboCop and Standard exit 1 both when they find offenses and when they
+-- fail (a broken config, a gem that will not load), so the status tells
+-- nothing: nvim-lint would report "exited with code: 1" on every file with an
+-- offense, and its rubocop linter ignores the status, which hides failures.
+-- What tells them apart is the output: a run that worked prints the JSON
+-- report. Read stdout and stderr together, pick the report line, and fail the
+-- parse without one, which nvim-lint shows as an error on the first line
+-- carrying the tool's own message.
+local function report(output)
+    for line in output:gmatch("[^\n]+") do
+        if line:match('^{"metadata"') then
+            return line
+        end
+    end
+    error("no report from the linter", 0)
+end
+
 --- nvim-lint linter for `name` ("standardrb" or "rubocop"), resolved for the
 --- current buffer the same way the formatter is.
 function M.linter(name)
@@ -174,10 +191,12 @@ function M.linter(name)
         return vim.tbl_extend("force", base, {
             cmd = command,
             args = vim.list_extend(vim.deepcopy(prefix), base.args),
+            ignore_exitcode = true,
+            stream = "both",
             -- nvim-lint's standardrb parser leaves `source` empty; label both
             -- like ruby-lsp labels its RuboCop diagnostics.
-            parser = function(...)
-                local diagnostics = base.parser(...)
+            parser = function(output, ...)
+                local diagnostics = base.parser(report(output), ...)
                 for _, diagnostic in ipairs(diagnostics) do
                     diagnostic.source = diagnostic.source or name
                 end

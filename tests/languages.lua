@@ -126,6 +126,33 @@ local standalone = ruby.linter("standardrb")
 vim.cmd.edit(vim.fn.fnameescape(temporary .. "/standalone/script.rb"))
 check(standalone().cmd == "standardrb", "standalone lint with the global tool")
 
+-- nvim-lint on Ruby: offenses are not failures, failures are not silent -----
+local lint_dir = project("lint", {
+    ["offense.rb"] = "def f(x)\n  return x\nend",
+    ["broken/a.rb"] = "def f(x)\n  return x\nend",
+    ["broken/.standard.yml"] = "ruby_version: [not valid",
+})
+local notified = {}
+local notify = vim.notify
+vim.notify = function(msg)
+    notified[#notified + 1] = msg
+end
+local function linted(file)
+    vim.cmd.edit(vim.fn.fnameescape(lint_dir .. "/" .. file))
+    vim.wait(15000, function()
+        return #vim.diagnostic.get(0) > 0
+    end, 100)
+    return vim.diagnostic.get(0)
+end
+local offense = linted("offense.rb")
+check(offense[1] and offense[1].source == "standardrb", "standardrb reports the offense")
+local failure = linted("broken/a.rb")
+check(failure[1] and failure[1].severity == vim.diagnostic.severity.ERROR, "a failing linter shows an error")
+check(failure[1] and failure[1].message:find("Output from linter", 1, true), "with the linter's own output")
+vim.wait(500)
+vim.notify = notify
+check(#notified == 0, "no exit-code notifications: " .. table.concat(notified, " | "))
+
 -- ruby-lsp client configuration ----------------------------------------------
 local ruby_lsp = vim.lsp.config.ruby_lsp
 check(ruby_lsp.init_options.formatter == "none", "ruby-lsp leaves formatting to conform")
