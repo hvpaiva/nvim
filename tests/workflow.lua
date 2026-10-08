@@ -225,21 +225,30 @@ local dir = project("format ruby with spaces", {
     ["lib/widget.rb"] = "value=2",
 })
 local ctx = { filename = dir .. "/lib/widget.rb" }
-check(formatter.command(nil, ctx) == "bundle", "format with project's bundle")
-check(vim.deep_equal(formatter.prepend_args(nil, ctx), { "exec", "rubocop" }), "bundle exec arguments")
+local under_mise = vim.fn.executable("mise") == 1 and { "mise", "x", "--" } or {}
+local function argv(context)
+    return vim.list_extend({ formatter.command(nil, context) }, formatter.prepend_args(nil, context))
+end
+local function expected(...)
+    return vim.list_extend(vim.deepcopy(under_mise), { ... })
+end
+check(vim.deep_equal(argv(ctx), expected("bundle", "exec", "rubocop")), "format with project's bundle and Ruby")
 check(formatter.cwd(nil, ctx) == dir, "formatter cwd follows buffer, not editor cwd")
+check(vim.list_contains(formatter.args, "--fix-layout"), "formatting corrects layout only")
 write(dir .. "/bin/rubocop", "#!/bin/sh\nexit 0")
 vim.fn.setfperm(dir .. "/bin/rubocop", "rwxr-xr-x")
-check(formatter.command(nil, ctx) == dir .. "/bin/rubocop", "prefer executable project binstub")
-check(#formatter.prepend_args(nil, ctx) == 0, "binstub has no bundle prefix")
+check(vim.deep_equal(argv(ctx), expected(dir .. "/bin/rubocop")), "prefer executable project binstub")
 local standalone = project("standalone", { ["widget.rb"] = "value=2" })
-check(formatter.command(nil, { filename = standalone .. "/widget.rb" }) == "rubocop", "standalone global formatter")
+check(
+    vim.deep_equal(argv({ filename = standalone .. "/widget.rb" }), expected("rubocop")),
+    "standalone global formatter"
+)
 local no_formatter = project(
     "without formatter",
     { Gemfile = 'gem "minitest"', ["Gemfile.lock"] = "GEM\n  specs:\n    minitest (6.0.6)" }
 )
 check(
-    formatter.command(nil, { filename = no_formatter .. "/widget.rb" }) == "rubocop",
+    vim.deep_equal(argv({ filename = no_formatter .. "/widget.rb" }), expected("rubocop")),
     "fallback when bundle lacks formatter"
 )
 
