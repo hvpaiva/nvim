@@ -217,7 +217,18 @@ vim.api.nvim_create_autocmd("FileType", {
 -- `process_items` strips noisy "Text" suggestions and pushes snippets last.
 -- `auto_setup = false`: omnifunc is bound per-buffer on `LspAttach` (see
 -- autocmds.lua), so completion only kicks in where it has something to do.
+-- ruby-lsp completes every method ending in `=` as an attribute writer, so an
+-- operator (`==`, `[]=`) gets its own label instead of `= = `.
 local process_items = function(items, base)
+    local ruby_lsp = {}
+    for _, client in ipairs(vim.lsp.get_clients({ name = "ruby_lsp" })) do
+        ruby_lsp[client.id] = true
+    end
+    for _, item in ipairs(items) do
+        if ruby_lsp[item.client_id] and item.textEdit and item.label:match("^%p+$") then
+            item.textEdit.newText = item.label
+        end
+    end
     return MiniCompletion.default_process_items(items, base, { kind_priority = { Text = -1, Snippet = 99 } })
 end
 require("mini.completion").setup({
