@@ -219,7 +219,8 @@ vim.api.nvim_create_autocmd("FileType", {
 -- autocmds.lua), so completion only kicks in where it has something to do.
 -- ruby-lsp completes every method ending in `=` as an attribute writer, so an
 -- operator (`==`, `[]=`) gets its own label instead of `= = `. Solargraph's
--- items for names ruby-lsp also offers are dropped.
+-- items for names ruby-lsp also offers are dropped, unless ruby-lsp guessed
+-- the receiver's type: then its items give way to Solargraph's, if any.
 local process_items = function(items, base)
     local ruby_lsp, solargraph, offered = {}, {}, {}
     for _, client in ipairs(vim.lsp.get_clients({ name = "ruby_lsp" })) do
@@ -228,19 +229,28 @@ local process_items = function(items, base)
     for _, client in ipairs(vim.lsp.get_clients({ name = "solargraph" })) do
         solargraph[client.id] = true
     end
+    local function guessed(item)
+        return ruby_lsp[item.client_id] and type(item.data) == "table" and item.data.guessed_type ~= nil
+    end
+    local solargraph_answered = vim.iter(items):any(function(item)
+        return solargraph[item.client_id]
+    end)
     for _, item in ipairs(items) do
         if ruby_lsp[item.client_id] then
-            offered[item.label] = true
+            if not guessed(item) then
+                offered[item.label] = true
+            end
             if item.textEdit and item.label:match("^%p+$") then
                 item.textEdit.newText = item.label
             end
         end
     end
-    if next(solargraph) then
-        items = vim.tbl_filter(function(item)
-            return not (solargraph[item.client_id] and offered[item.label])
-        end, items)
-    end
+    items = vim.tbl_filter(function(item)
+        if solargraph[item.client_id] then
+            return not offered[item.label]
+        end
+        return not (solargraph_answered and guessed(item))
+    end, items)
     return MiniCompletion.default_process_items(items, base, { kind_priority = { Text = -1, Snippet = 99 } })
 end
 require("mini.completion").setup({

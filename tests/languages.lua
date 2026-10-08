@@ -656,6 +656,20 @@ check(
     #completed == 2 and completed[1].client_id == rl_client,
     "Solargraph's completion adds only names ruby-lsp lacks: " .. vim.inspect(completed)
 )
+local guess = function(label, client_id)
+    return { label = label, kind = 2, client_id = client_id, data = { guessed_type = "Guessed" } }
+end
+completed = MiniCompletion.config.lsp_completion.process_items(
+    { guess("upcase", rl_client), guess("shift", rl_client), item("upcase", sg_client), item("upto", sg_client) },
+    ""
+)
+check(
+    #completed == 2 and completed[1].client_id == sg_client and completed[2].client_id == sg_client,
+    "a guessed receiver gives way to Solargraph's completion: " .. vim.inspect(completed)
+)
+completed = MiniCompletion.config.lsp_completion.process_items({ guess("shift", rl_client) }, "")
+check(#completed == 1, "guesses stay when Solargraph has none")
+
 local sent
 local completing = {
     offset_encoding = "utf-8",
