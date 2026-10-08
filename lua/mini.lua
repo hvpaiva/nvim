@@ -218,16 +218,28 @@ vim.api.nvim_create_autocmd("FileType", {
 -- `auto_setup = false`: omnifunc is bound per-buffer on `LspAttach` (see
 -- autocmds.lua), so completion only kicks in where it has something to do.
 -- ruby-lsp completes every method ending in `=` as an attribute writer, so an
--- operator (`==`, `[]=`) gets its own label instead of `= = `.
+-- operator (`==`, `[]=`) gets its own label instead of `= = `. Solargraph's
+-- items for names ruby-lsp also offers are dropped.
 local process_items = function(items, base)
-    local ruby_lsp = {}
+    local ruby_lsp, solargraph, offered = {}, {}, {}
     for _, client in ipairs(vim.lsp.get_clients({ name = "ruby_lsp" })) do
         ruby_lsp[client.id] = true
     end
+    for _, client in ipairs(vim.lsp.get_clients({ name = "solargraph" })) do
+        solargraph[client.id] = true
+    end
     for _, item in ipairs(items) do
-        if ruby_lsp[item.client_id] and item.textEdit and item.label:match("^%p+$") then
-            item.textEdit.newText = item.label
+        if ruby_lsp[item.client_id] then
+            offered[item.label] = true
+            if item.textEdit and item.label:match("^%p+$") then
+                item.textEdit.newText = item.label
+            end
         end
+    end
+    if next(solargraph) then
+        items = vim.tbl_filter(function(item)
+            return not (solargraph[item.client_id] and offered[item.label])
+        end, items)
     end
     return MiniCompletion.default_process_items(items, base, { kind_priority = { Text = -1, Snippet = 99 } })
 end

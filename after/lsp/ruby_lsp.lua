@@ -1,36 +1,14 @@
 -- ruby-lsp: run under the project's Ruby, tuned for mini.completion.
 -- Formatting is owned by conform.nvim (lua/ruby_tools.lua picks Standard or
--- RuboCop per project); ruby-lsp is told to stay out of it.
+-- RuboCop per project); ruby-lsp is told to stay out of it. Solargraph runs
+-- next to it (after/lsp/solargraph.lua) and answers through it.
 local ruby = require("ruby_tools")
 
-local launcher = vim.fn.stdpath("config") .. "/scripts/nvim-ruby-lsp"
-local scratch_workspace = vim.fn.stdpath("cache") .. "/ruby-lsp-scratch"
-
 return {
-    -- The project (Gemfile or repository), else the file's own directory:
-    -- without a root ruby-lsp takes Neovim's cwd as its workspace and indexes
-    -- everything below it. A file right in $HOME gets an empty workspace.
-    root_dir = function(bufnr, on_dir)
-        local path = vim.api.nvim_buf_get_name(bufnr)
-        if path == "" then
-            return
-        end
-        local root = vim.fs.root(bufnr, { "Gemfile", "gems.rb", ".git" }) or vim.fs.dirname(path)
-        if root == vim.env.HOME or root == "/" then
-            vim.fn.mkdir(scratch_workspace, "p")
-            root = scratch_workspace
-        end
-        on_dir(root)
-    end,
-    -- Neovim's PATH holds the Ruby it was started with; Bundler refuses to run
-    -- a project whose Gemfile pins another one, and ruby-lsp's C extensions
-    -- only load in the Ruby they were built for. `mise x` resolves the Ruby
-    -- from the project directory, and the launcher installs ruby-lsp into it
-    -- when missing.
-    cmd = function(dispatchers, config)
-        local cwd = config.cmd_cwd or config.root_dir
-        local argv = vim.fn.executable("mise") == 1 and { "mise", "x", "--", launcher } or { launcher }
-        return vim.lsp.rpc.start(argv, dispatchers, cwd and { cwd = cwd } or nil)
+    root_dir = ruby.lsp_root,
+    cmd = ruby.lsp_cmd("nvim-ruby-lsp"),
+    on_init = function(client)
+        ruby.merge_solargraph(client)
     end,
     on_attach = function(client, _)
         -- Drop the noisy default trigger chars; keep the ones that actually

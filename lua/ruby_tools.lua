@@ -721,4 +721,366 @@ function M.enable_on_type()
     end, on_type_ns)
 end
 
+-- Language servers ----------------------------------------------------------
+
+local scratch_workspace = vim.fn.stdpath("cache") .. "/ruby-lsp-scratch"
+
+--- `root_dir` for ruby-lsp and Solargraph: the project (Gemfile or
+--- repository), else the file's own directory. Without a root a server takes
+--- Neovim's cwd as its workspace and indexes everything below it. A file right
+--- in $HOME gets an empty workspace.
+function M.lsp_root(bufnr, on_dir)
+    local path = vim.api.nvim_buf_get_name(bufnr)
+    if path == "" then
+        return
+    end
+    local root = vim.fs.root(bufnr, { "Gemfile", "gems.rb", ".git" }) or vim.fs.dirname(path)
+    if root == vim.env.HOME or root == "/" then
+        vim.fn.mkdir(scratch_workspace, "p")
+        root = scratch_workspace
+    end
+    on_dir(root)
+end
+
+--- `cmd` that starts `launcher` (scripts/) under the project's Ruby. Neovim's
+--- PATH holds the Ruby it was started with; Bundler refuses to run a project
+--- whose Gemfile pins another one, and C extensions only load in the Ruby they
+--- were built for. `mise x` resolves the Ruby from the project directory, and
+--- the launcher installs its gem into it when missing.
+function M.lsp_cmd(launcher)
+    local path = vim.fn.stdpath("config") .. "/scripts/" .. launcher
+    return function(dispatchers, config)
+        local cwd = config.cmd_cwd or config.root_dir
+        local argv = vim.fn.executable("mise") == 1 and { "mise", "x", "--", path } or { path }
+        return vim.lsp.rpc.start(argv, dispatchers, cwd and { cwd = cwd } or nil)
+    end
+end
+
+-- Solargraph runs next to ruby-lsp. It infers the types of locals and method
+-- returns and indexes methods defined outside classes, which ruby-lsp does
+-- not; ruby-lsp parses past syntax errors, follows `require` and renames a
+-- constant's file with it, where Solargraph does not. Requests both serve go
+-- to ruby-lsp, which asks Solargraph too and keeps the answer `merged` names:
+-- one server's when it has one, else the other's, or both lists. Completion
+-- comes from both (deduplicated in mini.lua) and type definition from
+-- Solargraph alone; the rest is ruby-lsp's.
+local merged = {
+    ["textDocument/hover"] = "solargraph",
+    ["textDocument/definition"] = "solargraph",
+    ["textDocument/signatureHelp"] = "solargraph",
+    ["textDocument/prepareRename"] = "ruby_lsp",
+    ["textDocument/rename"] = "ruby_lsp",
+    ["textDocument/references"] = "both",
+    ["workspace/symbol"] = "both",
+}
+
+-- How long an answer from ruby-lsp waits for Solargraph's.
+M.solargraph_wait_ms = 1500
+
+-- Solargraph's other requests, which ruby-lsp and conform serve.
+local not_solargraph = {
+    ["textDocument/formatting"] = true,
+    ["textDocument/documentHighlight"] = true,
+    ["textDocument/documentSymbol"] = true,
+    ["textDocument/foldingRange"] = true,
+}
+
+--- Keeps Neovim from sending Solargraph the requests in `merged`, which reach
+--- it through ruby-lsp, and the ones in `not_solargraph`. Solargraph offers
+--- some of them whatever its settings say.
+function M.limit_solargraph(client)
+    local supports_method = client.supports_method
+    client.supports_method = function(self, method, ...)
+        if merged[method] or not_solargraph[method] then
+            return false
+        end
+        return supports_method(self, method, ...)
+    end
+end
+
+--- Gives mini.completion the columns of Solargraph's completion edits in
+--- bytes, the unit it reads them in whatever the server's encoding; their
+--- `additionalTextEdits` it reads right, and they are left alone.
+function M.complete_in_bytes(client)
+    local request = client.request
+    client.request = function(self, method, params, handler, bufnr)
+        if handler and (method == "textDocument/completion" or method == "completionItem/resolve") then
+            local inner = handler
+            handler = function(err, result, ctx)
+                local target = vim._resolve_bufnr(bufnr)
+                local function convert(r)
+                    for _, pos in ipairs(r and { r.start, r["end"] } or {}) do
+                        local line = vim.api.nvim_buf_get_lines(target, pos.line, pos.line + 1, false)[1]
+                        if line then
+                            pos.character = M.recode_column(line, pos.character, self.offset_encoding, "utf-8")
+                        end
+                    end
+                end
+                local items = type(result) == "table"
+                    and (result.items or (vim.islist(result) and result or { result }))
+                for _, item in ipairs(items or {}) do
+                    local edit = item.textEdit
+                    if edit then
+                        convert(edit.range)
+                        convert(edit.insert)
+                        convert(edit.replace)
+                    end
+                end
+                local defaults = type(result) == "table" and result.itemDefaults and result.itemDefaults.editRange
+                if defaults then
+                    convert(defaults.start and defaults or defaults.insert)
+                    convert(defaults.replace)
+                end
+                return inner(err, result, ctx)
+            end
+        end
+        return request(self, method, params, handler, bufnr)
+    end
+end
+
+local function empty(method, result)
+    if result == nil then
+        return true
+    elseif method == "textDocument/hover" then
+        local contents = result.contents
+        return contents == nil
+            or contents == ""
+            or (type(contents) == "table" and (contents.value or contents[1] or "") == "")
+    elseif method == "textDocument/signatureHelp" then
+        return not result.signatures or #result.signatures == 0
+    elseif method == "textDocument/rename" then
+        return vim.tbl_isempty(result.changes or {}) and vim.tbl_isempty(result.documentChanges or {})
+    end
+    return vim.islist(result) and #result == 0
+end
+
+--- `character` of `line` (a column in the `from` position encoding) in the
+--- `to` encoding.
+---@param line string
+---@param character integer
+---@param from string
+---@param to string
+---@return integer
+function M.recode_column(line, character, from, to)
+    if from == to or not line:find("[\128-\255]") then
+        return character
+    end
+    return vim.str_utfindex(line, to, vim.str_byteindex(line, from, character, false), false)
+end
+
+--- A copy of `result`, the answer to `method`, with its columns converted from
+--- the `from` position encoding to `to`. `line_at(uri, row)` gives the text of
+--- a line; a nil uri is the requested document.
+---@param method string
+---@param result any
+---@param from string
+---@param to string
+---@param line_at fun(uri: string?, row: integer): string?
+function M.recode(method, result, from, to, line_at)
+    if from == to or type(result) ~= "table" then
+        return result
+    end
+    result = vim.deepcopy(result)
+    local function range(uri, r)
+        for _, pos in ipairs(r and { r.start, r["end"] } or {}) do
+            local line = line_at(uri, pos.line)
+            if line then
+                pos.character = M.recode_column(line, pos.character, from, to)
+            end
+        end
+    end
+    local function edits(uri, list)
+        for _, edit in ipairs(list or {}) do
+            range(uri, edit.range)
+        end
+    end
+    if method == "textDocument/hover" then
+        range(nil, result.range)
+    elseif method == "textDocument/prepareRename" then
+        range(nil, result.start and result or result.range)
+    elseif method == "textDocument/rename" then
+        for uri, list in pairs(result.changes or {}) do
+            edits(uri, list)
+        end
+        for _, change in ipairs(result.documentChanges or {}) do
+            if change.textDocument then
+                edits(change.textDocument.uri, change.edits)
+            end
+        end
+    elseif method ~= "textDocument/signatureHelp" then
+        for _, item in ipairs(vim.islist(result) and result or { result }) do
+            local location = item.location or item
+            local uri = location.uri or location.targetUri
+            range(uri, location.range)
+            range(uri, location.targetRange)
+            range(uri, location.targetSelectionRange)
+            range(nil, location.originSelectionRange)
+        end
+    end
+    return result
+end
+
+-- Locations (or symbols) once each.
+local function unique(lists)
+    local result, seen = {}, {}
+    for _, list in ipairs(lists) do
+        for _, item in ipairs(vim.islist(list) and list or { list }) do
+            local location = item.location or item
+            local start = (location.targetSelectionRange or location.range or {}).start or {}
+            local key = ("%s:%s:%s"):format(location.uri or location.targetUri, start.line, start.character)
+            if not seen[key] then
+                seen[key] = true
+                result[#result + 1] = item
+            end
+        end
+    end
+    return result
+end
+
+--- The answer to `method` from ruby-lsp's and Solargraph's (in ruby-lsp's
+--- encoding), as `merged` says.
+function M.merge(method, ruby_lsp, solargraph)
+    local how = merged[method]
+    if how == "both" then
+        return unique({ ruby_lsp or {}, solargraph or {} })
+    end
+    local first, second = solargraph, ruby_lsp
+    if how == "ruby_lsp" then
+        first, second = ruby_lsp, solargraph
+    end
+    local result = empty(method, first) and second or first
+    if method == "textDocument/definition" and type(result) == "table" then
+        return unique({ result })
+    end
+    return result
+end
+
+--- The identifier at `character` (a column in `encoding`) of `line`, sigils
+--- left out.
+---@return string?
+function M.name_at(line, character, encoding)
+    local byte = vim.str_byteindex(line, encoding, character, false) + 1
+    for first, name, last in line:gmatch("()([%w_\128-\255]+[?!]?)()") do
+        if byte >= first and byte < last then
+            return name
+        end
+    end
+end
+
+--- The `locations` (columns in `encoding`) whose text has `name` in it.
+--- ruby-lsp answers references on a call's receiver with the method's.
+function M.naming(locations, name, encoding, line_at)
+    return vim.tbl_filter(function(location)
+        local r = location.range
+        local line = line_at(location.uri, r.start.line) or ""
+        local first = vim.str_byteindex(line, encoding, r.start.character, false)
+        local last = r["end"].line == r.start.line and vim.str_byteindex(line, encoding, r["end"].character, false)
+            or #line
+        return line:sub(first + 1, last):find(name, 1, true) ~= nil
+    end, locations)
+end
+
+-- line_at for M.recode, reading files that have no buffer.
+local function line_reader(bufnr)
+    local files = {}
+    return function(uri, row)
+        local target = uri and vim.fn.bufnr(vim.uri_to_fname(uri)) or bufnr
+        if target ~= -1 and vim.api.nvim_buf_is_loaded(target) then
+            return vim.api.nvim_buf_get_lines(target, row, row + 1, false)[1]
+        end
+        local path = vim.uri_to_fname(uri)
+        files[path] = files[path] or (vim.fn.filereadable(path) == 1 and vim.fn.readfile(path) or {})
+        return files[path][row + 1]
+    end
+end
+
+--- Makes ruby-lsp's `client` answer the requests in `merged` together with
+--- the Solargraph attached to the same buffer.
+function M.merge_solargraph(client)
+    local request, cancel_request = client.request, client.cancel_request
+    local pending = {}
+    client.request = function(self, method, params, handler, bufnr)
+        bufnr = vim._resolve_bufnr(bufnr)
+        local how = merged[method]
+        local solargraph = how and handler and vim.lsp.get_clients({ bufnr = bufnr, name = "solargraph" })[1]
+        if not solargraph or not solargraph.initialized then
+            return request(self, method, params, handler, bufnr)
+        end
+        local version = vim.lsp.util.buf_versions[bufnr]
+        local line_at = line_reader(bufnr)
+        local from, to = self.offset_encoding, solargraph.offset_encoding
+        local answers, done, ruby_id = {}, false, nil
+        local function finish()
+            if done then
+                return
+            end
+            done = true
+            if ruby_id then
+                pending[ruby_id] = nil
+            end
+            local ruby_lsp, other = answers.ruby_lsp or {}, answers.solargraph or {}
+            local ruby_result = ruby_lsp.result
+            if method == "textDocument/references" and type(ruby_result) == "table" then
+                local name = M.name_at(line_at(nil, params.position.line) or "", params.position.character, from)
+                ruby_result = name and M.naming(ruby_result, name, from, line_at) or ruby_result
+            end
+            local result = M.merge(method, ruby_result, M.recode(method, other.result, to, from, line_at))
+            handler(result == nil and ruby_lsp.err or nil, result, {
+                method = method,
+                client_id = self.id,
+                request_id = ruby_id,
+                bufnr = bufnr,
+                params = params,
+                version = version,
+            })
+        end
+        -- Answers as soon as the preferred server has something, else once
+        -- both did, giving up on Solargraph after solargraph_wait_ms.
+        local function settle()
+            local ruby_lsp, other = answers.ruby_lsp, answers.solargraph
+            local preferred = how == "ruby_lsp" and ruby_lsp or how == "solargraph" and other
+            if (ruby_lsp and other) or (preferred and not empty(method, preferred.result)) then
+                finish()
+            elseif ruby_lsp then
+                vim.defer_fn(finish, M.solargraph_wait_ms)
+            end
+        end
+        local ok
+        ok, ruby_id = request(self, method, params, function(err, result)
+            answers.ruby_lsp = { err = err, result = result }
+            settle()
+        end, bufnr)
+        if not ok or done then
+            return ok, ruby_id
+        end
+        local recoded = vim.deepcopy(params)
+        if recoded.position then
+            local line = vim.api.nvim_buf_get_lines(bufnr, recoded.position.line, recoded.position.line + 1, false)[1]
+            recoded.position.character = M.recode_column(line or "", recoded.position.character, from, to)
+        end
+        local sent, solargraph_id = solargraph:request(method, recoded, function(err, result)
+            answers.solargraph = { result = not err and result or nil }
+            settle()
+        end, bufnr)
+        if not sent then
+            answers.solargraph = {}
+            settle()
+        end
+        if not done then
+            pending[ruby_id] = function()
+                done = true
+                solargraph:cancel_request(solargraph_id)
+            end
+        end
+        return ok, ruby_id
+    end
+    client.cancel_request = function(self, id)
+        if pending[id] then
+            pending[id]()
+            pending[id] = nil
+        end
+        return cancel_request(self, id)
+    end
+end
+
 return M

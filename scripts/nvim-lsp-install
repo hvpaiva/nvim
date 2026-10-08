@@ -92,17 +92,20 @@ for bin in standardrb rubocop; do
 done
 mise reshim 2>/dev/null || true
 
-# ruby-lsp is not a mise tool: its C extensions are built for one Ruby ABI, so
-# it lives inside every Ruby (mise installs it with each new one from
-# ~/.config/mise/default-gems, and scripts/nvim-ruby-lsp installs it on first
-# use). Fill in the Rubies installed before that, so no first start waits.
+# ruby-lsp and Solargraph are not mise tools: their C extensions are built for
+# one Ruby ABI, so they live inside every Ruby (mise installs the gems
+# ~/.config/mise/default-gems lists with each new one, and
+# scripts/nvim-{ruby-lsp,solargraph} install theirs on first use). Fill in the
+# Rubies installed before that, so no first start waits.
 rubies=$(mise ls --installed --no-header ruby 2>/dev/null | awk '{ print $2 }')
 while read -r version; do
     [[ -n $version ]] || continue
-    if [[ $force == --force ]] || ! mise x "ruby@$version" -- gem list -i ruby-lsp >/dev/null 2>&1; then
-        say "ruby-lsp in ruby $version"
-        mise x "ruby@$version" -- gem install --no-document --no-user-install ruby-lsp || failed+=("ruby-lsp (ruby $version)")
-    fi
+    for gem in ruby-lsp solargraph; do
+        if [[ $force == --force ]] || ! mise x "ruby@$version" -- gem list -i "$gem" >/dev/null 2>&1; then
+            say "$gem in ruby $version"
+            mise x "ruby@$version" -- gem install --no-document --no-user-install "$gem" || failed+=("$gem (ruby $version)")
+        fi
+    done
 done <<<"$rubies"
 
 echo

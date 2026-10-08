@@ -31,7 +31,10 @@ vim.lsp.enable({
     "gopls",
     "hls",
     "rust_analyzer",
+    -- Ruby: Solargraph infers types ruby-lsp does not and answers through it
+    -- (after/lsp/{ruby_lsp,solargraph}.lua).
     "ruby_lsp",
+    "solargraph",
     "helm_ls",
     "yamlls",
     "jsonls",

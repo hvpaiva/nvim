@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Start Solargraph with the Ruby on PATH, installing the gem into that Ruby
+# first when it is missing. Neovim runs this through `mise x` from the
+# workspace, as it does scripts/nvim-ruby-lsp, so the Ruby on PATH is the one
+# the project selects.
+#
+# Solargraph knows a gem only once it has documented it into its cache. In a
+# bundle, the bundle's gems are documented in the background (gems already
+# cached are skipped), and the server reads them as it needs them.
+#
+# stdout is the LSP channel: everything this script says goes to stderr, which
+# Neovim writes to its LSP log.
+
+paths=$(ruby -e 'print Gem.bindir, "\n", RbConfig.ruby') || {
+    printf 'nvim-solargraph: no working ruby on PATH\n' >&2
+    exit 1
+}
+{
+    read -r bindir
+    read -r ruby_bin
+} <<<"$paths"
+
+locks=${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}
+if [[ ! -x $bindir/solargraph ]]; then
+    # Two editors opening Ruby at once must not install the same gem twice.
+    exec 9>"$locks/nvim-solargraph-$(id -u).lock"
+    flock 9
+    if [[ ! -x $bindir/solargraph ]]; then
+        printf 'nvim-solargraph: installing solargraph into %s\n' "$ruby_bin" >&2
+        gem install --no-document --no-user-install solargraph >&2 || exit 1
+    fi
+    exec 9>&-
+fi
+
+if [[ -f Gemfile.lock || -f gems.locked ]]; then
+    # One documenting run per workspace at a time; another editor's run
+    # covers this one.
+    workspace=$(cksum <<<"$PWD") || exit 1
+    (
+        flock -n 8 || exit 0
+        nice -n 19 "$bindir/solargraph" cache
+    ) 8>"$locks/nvim-solargraph-cache-$(id -u)-${workspace%% *}.lock" </dev/null >/dev/null 2>&1 &
+fi
+
+exec "$bindir/solargraph" stdio
