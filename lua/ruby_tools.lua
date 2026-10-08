@@ -501,38 +501,80 @@ function M.attach_fixes(bufnr)
     }, { bufnr = bufnr })
 end
 
--- ruby-lsp marks every test and group with "Run", "Run In Terminal" and
--- "Debug" code lenses whose commands the client implements. Their arguments
--- are { path, id, command, location, name }: `command` is the shell line that
--- runs that one test, `location` its 0-based line span.
-local function lens_test(cmd)
-    local args = cmd.arguments or {}
-    local path = args[1]
-    return {
-        path = path,
-        command = args[3],
-        location = args[4],
-        name = args[5] or args[2],
-        root = path and (M.bundle_root(path) or vim.fs.dirname(path)),
-    }
+-- ruby-lsp's full test discovery marks every Minitest and test-unit test and
+-- group under test/ or spec/ with "Run", "Run in terminal" and "Debug" lenses,
+-- in a bundle or not. A lens carries { path, id }: the test tree comes from
+-- `rubyLsp/discoverTests` and the shell line that runs a test from
+-- `rubyLsp/resolveTestCommands`, which also loads the reporters VS Code's
+-- test explorer reads (left out here).
+
+--- The test or group `id` in a `rubyLsp/discoverTests` tree.
+function M.find_test(items, id)
+    for _, item in ipairs(items or {}) do
+        local found = item.id == id and item or M.find_test(item.children, id)
+        if found then
+            return found
+        end
+    end
+end
+
+--- The innermost test or group around `row` (0-based) in that tree.
+function M.test_at(items, row)
+    for _, item in ipairs(items or {}) do
+        if item.range.start.line <= row and row <= item.range["end"].line then
+            return M.test_at(item.children, row) or item
+        end
+    end
+end
+
+--- The command of a `rubyLsp/resolveTestCommands` answer, without reporters.
+function M.test_command(commands)
+    local command = commands and commands[1]
+    return command and (command:gsub("%s%-r%S+/test_reporters/%S+%.rb", ""))
+end
+
+-- Asks `client` for the test `pick` chooses in the tree of `path`, then for
+-- its command, and calls `run` with { name, command, root }.
+local function with_test(client, path, pick, run)
+    local bufnr = vim.fn.bufadd(path)
+    local params = { textDocument = { uri = vim.uri_from_fname(path) } }
+    client:request("rubyLsp/discoverTests", params, function(err, items)
+        local item = not err and pick(items)
+        if not item then
+            vim.notify(err and "ruby-lsp tests: " .. err.message or "No test around the cursor", vim.log.levels.WARN)
+            return
+        end
+        client:request("rubyLsp/resolveTestCommands", { items = { item } }, function(cmd_err, result)
+            local command = not cmd_err and M.test_command(result and result.commands)
+            if not command then
+                vim.notify("ruby-lsp has no command for " .. item.id, vim.log.levels.WARN)
+                return
+            end
+            local root = client.root_dir or M.bundle_root(path) or vim.fs.dirname(path)
+            run({ name = item.label or item.id, command = command, root = root })
+        end, bufnr)
+    end, bufnr)
+end
+
+local function lens_test(cmd, ctx, run)
+    local path, id = unpack(cmd.arguments or {})
+    with_test(assert(vim.lsp.get_client_by_id(ctx.client_id)), path, function(items)
+        return M.find_test(items, id)
+    end, run)
 end
 
 --- Runs a test lens in the same sticky terminal as `<Leader>t`.
-function M.run_test_lens(cmd)
-    local test = lens_test(cmd)
-    if not test.command then
-        vim.notify("ruby-lsp test lens without a command", vim.log.levels.ERROR)
-        return
-    end
-    require("lenses").run_in_test_terminal(test.command, test.root)
+function M.run_test_lens(cmd, ctx)
+    lens_test(cmd, ctx, function(test)
+        require("lenses").run_in_test_terminal(test.command, test.root)
+    end)
 end
 
---- nvim-dap configuration debugging the test a lens names (the `ruby` adapter
---- runs `command` under rdbg).
-function M.debug_test_config(cmd)
-    local test = lens_test(cmd)
+--- nvim-dap configuration debugging `test` (the `ruby` adapter runs its
+--- command under rdbg).
+function M.debug_test_config(test)
     return {
-        name = "Ruby: " .. tostring(test.name),
+        name = "Ruby: " .. test.name,
         type = "ruby",
         request = "attach",
         command = test.command,
@@ -541,27 +583,10 @@ function M.debug_test_config(cmd)
     }
 end
 
-function M.debug_test_lens(cmd)
-    require("dap").run(M.debug_test_config(cmd))
-end
-
---- The "Debug" lens command of the innermost test or group around `row`
---- (0-based), from a textDocument/codeLens result.
-function M.nearest_debug_lens(lenses, row)
-    local best
-    for _, lens in ipairs(lenses or {}) do
-        local cmd = lens.command
-        local location = cmd and cmd.command == "rubyLsp.debugTest" and lens_test(cmd).location
-        if
-            location
-            and location.start_line <= row
-            and row <= location.end_line
-            and (not best or location.start_line > lens_test(best).location.start_line)
-        then
-            best = cmd
-        end
-    end
-    return best
+function M.debug_test_lens(cmd, ctx)
+    lens_test(cmd, ctx, function(test)
+        require("dap").run(M.debug_test_config(test))
+    end)
 end
 
 --- mini.pick items for ruby-lsp's `rubyLsp/workspace/dependencies` answer:
@@ -618,19 +643,11 @@ function M.debug_nearest_test()
         return
     end
     local row = vim.api.nvim_win_get_cursor(0)[1] - 1
-    local params = { textDocument = vim.lsp.util.make_text_document_params(bufnr) }
-    client:request("textDocument/codeLens", params, function(err, lenses)
-        if err then
-            vim.notify("ruby-lsp code lens: " .. err.message, vim.log.levels.ERROR)
-            return
-        end
-        local cmd = M.nearest_debug_lens(lenses, row)
-        if cmd then
-            M.debug_test_lens(cmd)
-        else
-            vim.notify("No test around the cursor", vim.log.levels.WARN)
-        end
-    end, bufnr)
+    with_test(client, vim.api.nvim_buf_get_name(bufnr), function(items)
+        return M.test_at(items, row)
+    end, function(test)
+        require("dap").run(M.debug_test_config(test))
+    end)
 end
 
 return M

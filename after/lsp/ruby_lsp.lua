@@ -52,6 +52,9 @@ return {
         -- becomes `{}/**/*.rb`, which globs every top-level file a second
         -- time as `root//file.rb`; this drops those copies.
         indexing = { excludedPatterns = { "{}/**/*.rb" } },
+        -- Test lenses for Minitest and test-unit with or without a bundle
+        -- (see ruby_tools.lua).
+        enabledFeatureFlags = { fullTestDiscovery = true },
     },
     -- ruby-lsp only detects RuboCop on its own. Standard projects get the
     -- Standard add-on (it ships in the standard gem); projects whose bundle
