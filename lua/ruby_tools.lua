@@ -838,6 +838,33 @@ function M.complete_in_bytes(client)
     end
 end
 
+local function trigger_before_cursor(client, params, bufnr)
+    local position = params.position
+    local line = vim.api.nvim_buf_get_lines(bufnr, position.line, position.line + 1, false)[1] or ""
+    local byte = vim.str_byteindex(line, client.offset_encoding, position.character, false)
+    local before = line:sub(byte, byte)
+    local provider = client.server_capabilities.completionProvider or {}
+    return byte > 0 and vim.list_contains(provider.triggerCharacters or {}, before) and before or nil
+end
+
+function M.complete_after_trigger(client)
+    local request = client.request
+    local kinds = vim.lsp.protocol.CompletionTriggerKind
+    client.request = function(self, method, params, handler, bufnr)
+        local invoked = method == "textDocument/completion"
+            and type(params) == "table"
+            and params.context
+            and params.context.triggerKind == kinds.Invoked
+        local trigger = invoked and trigger_before_cursor(self, params, vim._resolve_bufnr(bufnr))
+        if trigger then
+            params = vim.tbl_extend("force", params, {
+                context = { triggerKind = kinds.TriggerCharacter, triggerCharacter = trigger },
+            })
+        end
+        return request(self, method, params, handler, bufnr)
+    end
+end
+
 local function empty(method, result)
     if result == nil then
         return true

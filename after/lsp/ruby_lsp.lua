@@ -9,6 +9,7 @@ return {
     cmd = ruby.lsp_cmd("nvim-ruby-lsp"),
     on_init = function(client)
         ruby.merge_solargraph(client)
+        ruby.complete_after_trigger(client)
     end,
     on_attach = function(client, _)
         -- Drop the noisy default trigger chars; keep the ones that actually

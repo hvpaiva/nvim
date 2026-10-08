@@ -656,6 +656,29 @@ check(
     #completed == 2 and completed[1].client_id == rl_client,
     "Solargraph's completion adds only names ruby-lsp lacks: " .. vim.inspect(completed)
 )
+local sent
+local completing = {
+    offset_encoding = "utf-8",
+    server_capabilities = { completionProvider = { triggerCharacters = { ".", ":" } } },
+    request = function(_, _, params)
+        sent = params
+        return true, 1
+    end,
+}
+ruby.complete_after_trigger(completing)
+local dotted = vim.api.nvim_create_buf(false, true)
+vim.api.nvim_buf_set_lines(dotted, 0, -1, false, { 'puts "".', "end" })
+local function invoke(character)
+    local params = { textDocument = {}, position = { line = 0, character = character }, context = { triggerKind = 1 } }
+    completing:request("textDocument/completion", params, function() end, dotted)
+    return sent.context
+end
+check(
+    vim.deep_equal(invoke(8), { triggerKind = 2, triggerCharacter = "." }),
+    "completion invoked after a dot asks as the dot would"
+)
+check(vim.deep_equal(invoke(5), { triggerKind = 1 }), "completion invoked elsewhere stays invoked")
+
 local extracted = vim.api.nvim_create_buf(false, true)
 vim.api.nvim_buf_set_lines(extracted, 0, -1, false, { "  price * quantity + 100" })
 local function edit(first, last, text)
