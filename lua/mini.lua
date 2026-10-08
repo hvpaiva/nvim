@@ -93,7 +93,9 @@ MiniMisc.setup_restore_cursor()
 require("mini.sessions").setup()
 
 -- mini.pick + mini.extra: fuzzy finder for files, grep, help, etc.
-require("mini.pick").setup()
+require("mini.pick").setup({
+    mappings = { refine = "<C-y>", choose_marked = "<C-q>" },
+})
 require("mini.extra").setup()
 
 -- mini.ai: smarter text objects. Custom adds:
@@ -254,6 +256,7 @@ local process_items = function(items, base)
     return MiniCompletion.default_process_items(items, base, { kind_priority = { Text = -1, Snippet = 99 } })
 end
 require("mini.completion").setup({
+    mappings = { force_twostep = "<M-Space>", force_fallback = "" },
     lsp_completion = {
         source_func = "omnifunc",
         auto_setup = false,

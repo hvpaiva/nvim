@@ -110,6 +110,8 @@ The quickfix list is editable (quicker.nvim): change lines and `:w` to apply the
 
 Diagnostics show in the sign column as a dot in their severity's color; marks `a`–`z` and `A`–`Z` show their letter there in the theme's cyan (guttermarks.nvim), except on a line that also has a diagnostic.
 
+The terminal multiplexer takes `<C-Space>` and `<M-CR>`, so the keys that defaulted to them move: `<M-Space>` asks for completion in Insert mode (`<C-x><C-o>` too; `<C-n>` completes buffer words), and in a picker `<C-y>` narrows to the current matches and `<C-q>` chooses the marked items (a grep sends them to the quickfix list).
+
 ## Structure
 
 ```text

@@ -93,6 +93,13 @@ check(vim.fn.maparg("an", "x", false, true).desc == "Select parent (outer) node"
 check(vim.fn.maparg("in", "x", false, true).desc == "Select child (inner) node", "visual in is incremental selection")
 check(not vim.tbl_isempty(vim.fn.maparg("aN", "x", false, true)), "mini.ai next text objects on aN/iN")
 
+check(vim.fn.maparg("<M-Space>", "i", false, true).desc == "Complete with two-stage", "<M-Space> asks for completion")
+check(vim.tbl_isempty(vim.fn.maparg("<C-Space>", "i", false, true)), "<C-Space> is left to the multiplexer")
+check(
+    MiniPick.config.mappings.refine == "<C-y>" and MiniPick.config.mappings.choose_marked == "<C-q>",
+    "picker keys clear of the multiplexer"
+)
+
 scratch({ "marked", "flagged" }, "text")
 vim.api.nvim_win_set_cursor(0, { 1, 0 })
 feed("ma")
