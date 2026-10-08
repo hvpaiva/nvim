@@ -244,6 +244,263 @@ function M.linter(name)
     end
 end
 
+-- ruby-lsp offers "Autocorrect" and "Disable for this line" on its own
+-- diagnostics only. Files nvim-lint lints get the same actions from an
+-- in-process server reading nvim-lint's diagnostics: a correction runs the
+-- tool with `--only <cop>` on the buffer and keeps the changed hunks that
+-- touch the offense, since neither tool can correct a single line.
+local fix_tools = {
+    standardrb = { gem = "standard", fix = { "--fix" }, directive = "standard" },
+    rubocop = { gem = "rubocop", fix = { "--server", "-a" }, directive = "rubocop" },
+}
+
+local function text(lines)
+    return #lines > 0 and table.concat(lines, "\n") .. "\n" or ""
+end
+
+-- The diff joins corrections on adjacent rows into one hunk. A hunk that
+-- keeps its row count is split into one hunk per row, so correcting one
+-- offense leaves its neighbors alone.
+local function hunks(old, new)
+    local split = {}
+    for _, hunk in ipairs(vim.text.diff(text(old), text(new), { result_type = "indices" })) do
+        local start_a, count_a, start_b, count_b = unpack(hunk)
+        if count_a == count_b then
+            for i = 0, count_a - 1 do
+                split[#split + 1] = { start_a + i, 1, start_b + i, 1 }
+            end
+        else
+            split[#split + 1] = hunk
+        end
+    end
+    return split
+end
+
+--- LSP TextEdits turning the lines `old` into `new`. With `first` and `last`
+--- (0-based rows) only the hunks touching those rows are kept.
+---@param old string[]
+---@param new string[]
+---@param first integer?
+---@param last integer?
+---@return lsp.TextEdit[]
+function M.hunk_edits(old, new, first, last)
+    local edits = {}
+    for _, hunk in ipairs(hunks(old, new)) do
+        local start_a, count_a, start_b, count_b = unpack(hunk)
+        -- start_a is 1-based, or the row a pure insertion goes after.
+        local row = count_a == 0 and start_a or start_a - 1
+        local touches = not first
+            or (count_a == 0 and row >= first and row <= last + 1)
+            or (count_a > 0 and row <= last and row + count_a - 1 >= first)
+        local lines = vim.list_slice(new, start_b, start_b + count_b - 1)
+        if touches and count_a == 0 and row == #old and row > 0 then
+            -- Neovim reads an insertion past the last row as whole lines, so
+            -- its trailing newline would leave an empty row: append to the
+            -- last row instead (byte columns, see the server's encoding).
+            local eol = { line = row - 1, character = #old[row] }
+            edits[#edits + 1] = { range = { start = eol, ["end"] = eol }, newText = "\n" .. table.concat(lines, "\n") }
+        elseif touches then
+            edits[#edits + 1] = {
+                range = { start = { line = row, character = 0 }, ["end"] = { line = row + count_a, character = 0 } },
+                newText = text(lines),
+            }
+        end
+    end
+    return edits
+end
+
+--- The edit appending a `tool:disable cop` directive to `line` (row `row`),
+--- or extending the directive already there.
+---@param line string
+---@param row integer
+---@param tool "standardrb"|"rubocop"
+---@param cop string
+---@return lsp.TextEdit
+function M.disable_edit(line, row, tool, cop)
+    local directive = fix_tools[tool].directive .. ":disable"
+    local extends = line:find("#%s*" .. directive .. "%s+[%w/_, ]+$")
+    local position = { line = row, character = #line }
+    return {
+        range = { start = position, ["end"] = position },
+        newText = extends and ", " .. cop or " # " .. directive .. " " .. cop,
+    }
+end
+
+-- A comment appended to a row that ends inside a heredoc, or inside a literal
+-- that goes on past the row, would become part of its text (or break the
+-- heredoc's terminator).
+local multiline_literals = { string = true, string_array = true, symbol_array = true, regex = true, subshell = true }
+
+local function ends_in_literal(bufnr, row, line)
+    local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "ruby")
+    if not ok or not parser then
+        return false
+    end
+    parser:parse()
+    local node =
+        vim.treesitter.get_node({ bufnr = bufnr, pos = { row, math.max(#line - 1, 0) }, ignore_injections = true })
+    while node do
+        local kind = node:type()
+        local _, _, end_row = node:range()
+        if kind == "heredoc_body" or (multiline_literals[kind] and end_row > row) then
+            return true
+        end
+        node = node:parent()
+    end
+    return false
+end
+
+local function lint_diagnostics(bufnr)
+    local lint = require("lint")
+    local diagnostics = {}
+    for tool in pairs(fix_tools) do
+        vim.list_extend(diagnostics, vim.diagnostic.get(bufnr, { namespace = lint.get_namespace("ruby_" .. tool) }))
+    end
+    return diagnostics
+end
+
+--- Code actions for the nvim-lint diagnostics of `bufnr` between rows
+--- `first` and `last`: per offense linted from the current text, autocorrect
+--- its cop (resolved later, it runs the tool) and disable it on its line;
+--- then autocorrect everything.
+---@return lsp.CodeAction[]
+function M.code_actions(bufnr, first, last)
+    local tool = M.lint_plan(vim.api.nvim_buf_get_name(bufnr)).editor
+    if not tool then
+        return {}
+    end
+    local uri = vim.uri_from_bufnr(bufnr)
+    local actions, seen, correctable = {}, {}, false
+    for _, diagnostic in ipairs(lint_diagnostics(bufnr)) do
+        local cop = diagnostic.code
+        local fixable = vim.tbl_get(diagnostic, "user_data", "correctable")
+        local current = vim.tbl_get(diagnostic, "user_data", "changedtick") == vim.b[bufnr].changedtick
+        correctable = correctable or fixable
+        local key = ("%s:%d"):format(cop, diagnostic.lnum)
+        if cop and current and not seen[key] and diagnostic.lnum <= last and diagnostic.end_lnum >= first then
+            seen[key] = true
+            if fixable then
+                actions[#actions + 1] = {
+                    title = "Autocorrect " .. cop,
+                    kind = "quickfix",
+                    data = { uri = uri, tool = tool, cop = cop, first = diagnostic.lnum, last = diagnostic.end_lnum },
+                }
+            end
+            local line = vim.api.nvim_buf_get_lines(bufnr, diagnostic.lnum, diagnostic.lnum + 1, false)[1] or ""
+            if not ends_in_literal(bufnr, diagnostic.lnum, line) then
+                actions[#actions + 1] = {
+                    title = ("Disable %s for this line"):format(cop),
+                    kind = "quickfix",
+                    edit = { changes = { [uri] = { M.disable_edit(line, diagnostic.lnum, tool, cop) } } },
+                }
+            end
+        end
+    end
+    if correctable then
+        actions[#actions + 1] = {
+            title = "Autocorrect all offenses",
+            kind = "source.fixAll",
+            data = { uri = uri, tool = tool },
+        }
+    end
+    return actions
+end
+
+--- Fills in the edit of an action from `code_actions` by running its tool on
+--- the buffer; `callback(err, action)` runs on the main loop.
+function M.resolve_action(action, callback)
+    local data = action.data
+    if not data then
+        callback(nil, action)
+        return
+    end
+    local bufnr = vim.uri_to_bufnr(data.uri)
+    local filename = vim.api.nvim_buf_get_name(bufnr)
+    local spec = fix_tools[data.tool]
+    local command, prefix, cwd = resolve(filename, data.tool, spec.gem)
+    if data.tool == "rubocop" then
+        track_server(command, prefix, cwd)
+    end
+    local argv = vim.list_extend({ command }, prefix)
+    vim.list_extend(argv, spec.fix)
+    if data.cop then
+        vim.list_extend(argv, { "--only", data.cop })
+    end
+    vim.list_extend(argv, { "-f", "quiet", "--stderr", "--stdin", filename })
+    local old = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    vim.system(argv, { cwd = cwd, stdin = text(old), text = true }, function(result)
+        vim.schedule(function()
+            if result.code > 1 or result.stdout == "" then
+                local message = vim.trim(result.stderr ~= "" and result.stderr or "no output")
+                callback({ code = -32603, message = data.tool .. ": " .. message })
+                return
+            end
+            local new = vim.split(result.stdout, "\n", { plain = true })
+            if new[#new] == "" then
+                new[#new] = nil
+            end
+            local edits = M.hunk_edits(old, new, data.first, data.last)
+            if #edits == 0 then
+                vim.notify(("%s: no safe autocorrection here"):format(data.cop or data.tool), vim.log.levels.WARN)
+            end
+            callback(nil, vim.tbl_extend("force", action, { edit = { changes = { [data.uri] = edits } } }))
+        end)
+    end)
+end
+
+local function fixes_server(dispatchers)
+    local closing, request_id = false, 0
+    return {
+        request = function(method, params, callback, notify_reply_callback)
+            request_id = request_id + 1
+            local id = request_id
+            if method == "initialize" then
+                callback(nil, {
+                    capabilities = { positionEncoding = "utf-8", codeActionProvider = { resolveProvider = true } },
+                })
+            elseif method == "textDocument/codeAction" then
+                local bufnr = vim.uri_to_bufnr(params.textDocument.uri)
+                callback(nil, M.code_actions(bufnr, params.range.start.line, params.range["end"].line))
+            elseif method == "codeAction/resolve" then
+                M.resolve_action(params, callback)
+            elseif method == "shutdown" then
+                callback(nil, nil)
+            else
+                callback({ code = -32601, message = "Method not found: " .. method })
+            end
+            if notify_reply_callback then
+                vim.schedule(function()
+                    notify_reply_callback(id)
+                end)
+            end
+            return true, id
+        end,
+        notify = function(method)
+            if method == "exit" then
+                dispatchers.on_exit(0, 15)
+            end
+            return true
+        end,
+        is_closing = function()
+            return closing
+        end,
+        terminate = function()
+            closing = true
+        end,
+    }
+end
+
+--- Attaches the code action server to a buffer nvim-lint lints.
+function M.attach_fixes(bufnr)
+    vim.lsp.start({
+        name = "ruby_fixes",
+        cmd = fixes_server,
+        reuse_client = function(client, config)
+            return client.name == config.name
+        end,
+    }, { bufnr = bufnr })
+end
+
 -- ruby-lsp marks every test and group with "Run", "Run In Terminal" and
 -- "Debug" code lenses whose commands the client implements. Their arguments
 -- are { path, id, command, location, name }: `command` is the shell line that

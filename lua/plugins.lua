@@ -155,20 +155,48 @@ local function linters_for(buf, path)
     return lint.linters_by_ft[ft], vim.fs.root(buf, haskell_root)
 end
 
+local function lint_buffer(buf)
+    local path = vim.api.nvim_buf_get_name(buf)
+    if vim.fn.filereadable(path) == 0 then
+        return
+    end
+    local names, cwd = linters_for(buf, path)
+    if not names then
+        return
+    end
+    if vim.bo[buf].filetype == "ruby" then
+        ruby.attach_fixes(buf)
+    end
+    vim.api.nvim_buf_call(buf, function()
+        lint.try_lint(names, { cwd = cwd or vim.fs.dirname(path) })
+    end)
+end
+
+local lint_group = vim.api.nvim_create_augroup("hvpaiva-lint", { clear = true })
 vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
-    group = vim.api.nvim_create_augroup("hvpaiva-lint", { clear = true }),
+    group = lint_group,
     callback = function(ev)
-        local path = vim.api.nvim_buf_get_name(ev.buf)
-        if vim.fn.filereadable(path) == 0 then
+        lint_buffer(ev.buf)
+    end,
+})
+
+-- RuboCop and Standard lint the buffer through stdin, so Ruby is also linted
+-- once an edit settles (the other linters read the file on disk).
+local pending_lint = {}
+vim.api.nvim_create_autocmd({ "InsertLeave", "TextChanged" }, {
+    group = lint_group,
+    callback = function(ev)
+        if vim.bo[ev.buf].filetype ~= "ruby" then
             return
         end
-        local names, cwd = linters_for(ev.buf, path)
-        if not names then
-            return
-        end
-        vim.api.nvim_buf_call(ev.buf, function()
-            lint.try_lint(names, { cwd = cwd or vim.fs.dirname(path) })
-        end)
+        local token = {}
+        pending_lint[ev.buf] = token
+        vim.defer_fn(function()
+            if pending_lint[ev.buf] == token and vim.api.nvim_buf_is_valid(ev.buf) then
+                pending_lint[ev.buf] = nil
+                lint_buffer(ev.buf)
+            end
+        end, 300)
     end,
 })
 
