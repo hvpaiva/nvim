@@ -255,6 +255,10 @@ local function lang_patterns(lang, extra)
     return vim.list_extend(extra, patterns)
 end
 
+-- Ruby reads friendly-snippets' `ruby.json`, plus `rspec.json` in spec files;
+-- `rdoc.json` (YARD tags) stays out.
+local rspec_snippets = MiniSnippets.gen_loader.from_runtime("ruby/rspec.json")
+
 MiniSnippets.setup({
     snippets = {
         MiniSnippets.gen_loader.from_file(vim.fn.stdpath("config") .. "/snippets/global.json"),
@@ -264,8 +268,15 @@ MiniSnippets.setup({
                 bash = lang_patterns("bash", { "shell/**/*.json" }),
                 sh = lang_patterns("sh", { "shell/**/*.json" }),
                 zsh = lang_patterns("zsh", { "shell/**/*.json" }),
+                ruby = { "ruby/ruby.json" },
             },
         }),
+        function(context)
+            if context.lang == "ruby" and vim.api.nvim_buf_get_name(context.buf_id):match("_spec%.rb$") then
+                return rspec_snippets(context)
+            end
+            return {}
+        end,
     },
 })
 -- The server computes completion ranges from Neovim's byte columns but does

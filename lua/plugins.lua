@@ -234,10 +234,9 @@ require("render-markdown").setup({ enabled = false, latex = { enabled = false } 
 -- note in options.lua. Keymaps live in keymaps.lua.
 require("oil").setup({ columns = {} })
 
--- treesj (tree-sitter split/join) needs no setup: Ruby buffers map `gS` to
--- `require("treesj").toggle()` (after/ftplugin/ruby.lua), and leaving out
--- `setup()` keeps its default keymaps off and its language presets out of
--- startup. mini.splitjoin keeps `gS` everywhere else.
+-- treesj (tree-sitter split/join) is set up on its first use by Ruby's `gS`
+-- (after/ftplugin/ruby.lua), which keeps its language presets out of startup.
+-- mini.splitjoin keeps `gS` everywhere else.
 
 -- quicker.nvim: the quickfix list as an editable buffer (edit the lines and
 -- `:w` to apply them to the files) with surrounding context on `>`/`<`.

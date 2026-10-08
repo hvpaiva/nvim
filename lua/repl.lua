@@ -20,13 +20,18 @@ local roots = { "Gemfile", "pyproject.toml", ".git" }
 local repls = {}
 
 --- The command and working directory of the REPL for the current buffer.
+--- In a bundle, irb loads it through `bundler/setup` (`bundle exec irb` needs
+--- irb in the Gemfile).
 function M.target()
     local program = programs[vim.bo.filetype] or { vim.o.shell }
+    local name = vim.api.nvim_buf_get_name(0)
+    local cwd = vim.fs.root(0, roots) or (name ~= "" and vim.fs.dirname(name)) or vim.fn.getcwd()
+    if vim.bo.filetype == "ruby" and (vim.uv.fs_stat(cwd .. "/Gemfile") or vim.uv.fs_stat(cwd .. "/gems.rb")) then
+        program = { "irb", "-rbundler/setup" }
+    end
     local managed = vim.bo.filetype == "ruby" or vim.bo.filetype == "python"
     local cmd = managed and vim.fn.executable("mise") == 1 and vim.list_extend({ "mise", "exec", "--" }, program)
         or program
-    local name = vim.api.nvim_buf_get_name(0)
-    local cwd = vim.fs.root(0, roots) or (name ~= "" and vim.fs.dirname(name)) or vim.fn.getcwd()
     return cmd, cwd
 end
 
