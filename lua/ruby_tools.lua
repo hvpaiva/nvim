@@ -650,4 +650,75 @@ function M.debug_nearest_test()
     end)
 end
 
+-- ruby-lsp's on-type formatting: `end` after an opening line, a heredoc's
+-- terminator, the closing block pipe, and a body reindented when its `end` is
+-- typed. It runs in every Insert submode, `ic` included (mini.completion holds
+-- it while waiting for items, and vim.lsp.on_type_formatting skips it). `{` is
+-- left to mini.pairs and comment leaders to 'formatoptions' `r`.
+local on_type_keys = { ["\r"] = "\n", ["|"] = "|", d = "d" }
+
+--- The trigger character ruby-lsp acts on for the key `typed`, given the
+--- cursor's line once the key is in; nil when the server would do nothing.
+---@param typed string
+---@param line string
+---@return string?
+function M.on_type_trigger(typed, line)
+    local ch = on_type_keys[typed]
+    if ch == "|" and not (line:find("do%s+|") or line:find("{%s+|")) then
+        return nil
+    end
+    if ch == "d" and vim.trim(line) ~= "end" then
+        return nil
+    end
+    return ch
+end
+
+--- Applies ruby-lsp's on-type edits for `ch`, just typed at the cursor of
+--- `bufnr`, unless the buffer changes before they arrive.
+function M.format_on_type(bufnr, ch)
+    local client = vim.lsp.get_clients({ bufnr = bufnr, name = "ruby_lsp" })[1]
+    if not client then
+        return
+    end
+    local version = vim.lsp.util.buf_versions[bufnr]
+    local params = vim.tbl_extend(
+        "keep",
+        vim.lsp.util.make_formatting_params(),
+        vim.lsp.util.make_position_params(0, client.offset_encoding),
+        { ch = ch }
+    )
+    client:request("textDocument/onTypeFormatting", params, function(err, edits)
+        if err or not edits or not vim.api.nvim_buf_is_loaded(bufnr) or vim.lsp.util.buf_versions[bufnr] ~= version then
+            return
+        end
+        edits = vim.tbl_filter(function(edit)
+            return not edit.newText:match("^#%s*$")
+        end, edits)
+        vim.lsp.util.apply_text_edits(edits, bufnr, client.offset_encoding)
+    end, bufnr)
+end
+
+local on_type_ns = vim.api.nvim_create_namespace("hvpaiva.ruby_on_type")
+
+--- Formats Ruby buffers as their trigger keys are typed.
+function M.enable_on_type()
+    vim.on_key(function(_, typed)
+        if not on_type_keys[typed] then
+            return
+        end
+        local mode = vim.api.nvim_get_mode()
+        local bufnr = vim.api.nvim_get_current_buf()
+        if mode.blocking or mode.mode:sub(1, 1) ~= "i" or vim.bo[bufnr].filetype ~= "ruby" then
+            return
+        end
+        vim.schedule(function()
+            local ch = vim.api.nvim_get_current_buf() == bufnr
+                and M.on_type_trigger(typed, vim.api.nvim_get_current_line())
+            if ch then
+                M.format_on_type(bufnr, ch)
+            end
+        end)
+    end, on_type_ns)
+end
+
 return M

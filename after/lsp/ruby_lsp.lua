@@ -41,6 +41,7 @@ return {
         if client.server_capabilities.completionProvider then
             client.server_capabilities.completionProvider.triggerCharacters = { ".", ":", "(" }
         end
+        ruby.enable_on_type()
     end,
     init_options = {
         formatter = "none",

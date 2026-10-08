@@ -58,9 +58,9 @@ local codelens_clients = { ruby_lsp = true, rust_analyzer = true, terraformls = 
 
 -- On-type formatting edits the line as you type in the server's own style;
 -- lua_ls and tsc would fight stylua and prettier. Only servers whose edits
--- are the point: ruby-lsp closes blocks (`end`, `|`), rust-analyzer adds `;`
--- and the like.
-local on_type_clients = { ruby_lsp = true, rust_analyzer = true }
+-- are the point: rust-analyzer adds `;` and the like. ruby-lsp's (`end`, `|`)
+-- runs from ruby_tools.enable_on_type.
+local on_type_clients = { rust_analyzer = true }
 
 vim.api.nvim_create_autocmd("LspAttach", {
     group = vim.api.nvim_create_augroup("hvpaiva-lsp-codelens", { clear = true }),
