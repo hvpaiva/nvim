@@ -46,7 +46,7 @@ To install or refresh the external language tooling I use:
 ~/.config/nvim/scripts/nvim-lsp-install
 ```
 
-This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `helm_ls`, `yaml-language-server`, `vscode-json-language-server`, `vscode-eslint-language-server`, `bash-language-server`, `gh-actions-language-server`, `docker-language-server`, `typescript-language-server`, `basedpyright`, `ruff`, `terraform-ls`, `tflint`, `taplo`), the formatters (`stylua`, `shfmt`, `prettier`, `goimports`, `ruff`, `terraform fmt`, `taplo`, and the Ruby `standardrb` and `rubocop` via the `mise` gem backend) and the linters (`shellcheck`, `golangci-lint`). It also installs `ruby-lsp` into every Ruby mise has (see below). Conform picks up a project-local `node_modules/.bin/prettier` when present.
+This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`, `marksman`, `helm_ls`, `yaml-language-server`, `vscode-json-language-server`, `vscode-eslint-language-server`, `bash-language-server`, `gh-actions-language-server`, `docker-language-server`, `typescript-language-server`, `basedpyright`, `ruff`, `terraform-ls`, `tflint`, `taplo`), the formatters (`stylua`, `shfmt`, `prettier`, `goimports`, `ruff`, `terraform fmt`, `taplo`, and the Ruby `standardrb` and `rubocop` via the `mise` gem backend) and the linters (`shellcheck`, `golangci-lint`). It also installs `ruby-lsp` and Solargraph into every Ruby mise has (see below). Conform picks up a project-local `node_modules/.bin/prettier` when present.
 
 Code lenses and on-type formatting come only from the servers whose lenses `gl` can act on and whose as-you-type edits are the point: ruby-lsp (tests, `end` insertion), rust-analyzer (run, debug, references), terraform-ls (references) and gopls (`go.mod` and `go:generate` commands). Elsewhere they would only add "N references" noise or reformat lines against the project formatter.
 
@@ -67,11 +67,15 @@ After installing parsers and language servers, sanity-check with:
 
 ## Ruby and shell
 
-`ruby-lsp` runs under the project's Ruby: Neovim starts it through `mise x` from the project root, so `.ruby-version` or `mise.toml` decide, not the Ruby Neovim was started with (Bundler refuses a Ruby the Gemfile does not pin). Its C extensions are built for one Ruby ABI, so it lives inside each Ruby rather than being a mise tool: mise installs it with every new Ruby from `~/.config/mise/default-gems`, and `scripts/nvim-ruby-lsp` installs it into the active Ruby on first use when missing.
+`ruby-lsp` runs under the project's Ruby: Neovim starts it through `mise x` from the project root, so `.ruby-version` or `mise.toml` decide, not the Ruby Neovim was started with (Bundler refuses a Ruby the Gemfile does not pin). Its C extensions are built for one Ruby ABI, so it lives inside each Ruby rather than being a mise tool: mise installs it with every new Ruby from `~/.config/mise/default-gems`, and `scripts/nvim-ruby-lsp` installs it into the active Ruby on first use when missing. Its workspace is the project (Gemfile or repository), or the directory of a loose script; a script right in `$HOME` gets an empty workspace instead of indexing the whole home. The launcher loads `ruby/ruby_lsp_fresh_parse.rb` into it: ruby-lsp parses a request's document as the request arrives, possibly before applying the change sent just ahead of it, and the patch parses again right before the request runs, so completion after `.`, diagnostics and on-type edits see the current text.
 
-Each Ruby file follows one style, Standard or RuboCop: a `.standard.yml` or `.rubocop.yml` decides, then the bundle's direct dependencies, then Standard. Formatting (`gQ`, `gq`) always goes through Conform with that tool, preferring an executable project binstub, then `bundle exec` when the lockfile has the gem, then the tool on `PATH`. Linting follows the same choice: ruby-lsp lints when the bundle carries the tool (its RuboCop integration, or the Standard add-on), and nvim-lint runs it otherwise (scripts outside a bundle, bundles without a linter). RuboCop daemons started by `--server` are stopped when Neovim exits.
+Solargraph runs next to it, started the same way (`scripts/nvim-solargraph`, same workspace), for what ruby-lsp does not know: the types of locals and method returns (`lines = File.readlines(…)` then `lines.` completes Array's methods) and methods defined outside classes, as scripts have them. ruby-lsp in turn parses past syntax errors, follows `require` and renames a constant's file with it. Each request gets one answer, from ruby-lsp, which also asks Solargraph: `K`, `<C-]>` and signature help take Solargraph's answer when it has one, else ruby-lsp's (a file that does not parse yet, a gem Solargraph has not documented); `grn` renames constants through ruby-lsp and locals and methods through Solargraph; `grr` and workspace symbols list both servers' results once each. Completion lists both, Solargraph adding only names ruby-lsp lacks; `grt` (type definition) is Solargraph's alone. Diagnostics, formatting, folding and the rest stay with ruby-lsp, nvim-lint and Conform. Solargraph knows a gem only once it has documented it: in a bundle the launcher documents the bundle's gems in the background, at low priority, on first open (a large bundle takes minutes); until then ruby-lsp answers for them. Block parameters stay untyped for both servers.
 
-ruby-lsp's test code lenses work: `gl` on a test runs it in the same terminal as `<Space>t`, or debugs it. `<Space>rt` debugs the test around the cursor. Inlay hints (implicit `rescue`, hash shorthand values) show while `<Space>oh` has them on.
+Each Ruby file follows one style, Standard or RuboCop: a `.standard.yml` or `.rubocop.yml` decides, then the bundle's direct dependencies, then Standard. Formatting (`gQ`, `gq`) always goes through Conform with that tool, preferring an executable project binstub, then `bundle exec` when the lockfile has the gem, then the tool on `PATH`, all under the project's Ruby (`mise x`). It runs with `--fix-layout`: formatting only touches whitespace and line breaks, and style corrections (`warn` for `$stderr.puts`, a redundant `return`) stay diagnostics. Linting follows the same choice: ruby-lsp lints when the bundle carries the tool (its RuboCop integration, or the Standard add-on), and nvim-lint runs it otherwise (scripts outside a bundle, bundles without a linter) on open, on save, and once an edit settles (leaving Insert mode, or a pause after a Normal-mode change). Both paths report a cop with ruby-lsp's severities (conventions are INFO). Files nvim-lint lints still get ruby-lsp's quick fixes on `gra`, from an in-process server (`ruby_fixes`): per offense linted from the current text, autocorrect its cop on its own lines, or disable it for the line; and autocorrect all offenses. RuboCop daemons started by `--server` are stopped when Neovim exits.
+
+ruby-lsp's test code lenses mark Minitest and test-unit tests under `test/` or `spec/`, with or without a bundle: `gl` on a test runs it from the workspace root in the same terminal as `<Space>t`, or debugs it. `<Space>rt` debugs the test around the cursor. RSpec has lenses only with the `ruby-lsp-rspec` add-on in the bundle; `<Space>t` runs it either way. Inlay hints (implicit `rescue`, hash shorthand values) show while `<Space>oh` has them on. `<C-]>` jumps to the definition at the cursor (vim-ruby's by-name tag maps are removed).
+
+ruby-lsp's on-type formatting adds `end` after an opening line, a heredoc's terminator and the closing block pipe (typing the pipe yourself does not double it), and reindents a body when its `end` is typed, also while the completion menu is waiting for items. Brackets and quotes are mini.pairs', comment leaders 'formatoptions'. `=` indents like the file's style (vim-ruby's settings for Standard or RuboCop). friendly-snippets' Ruby snippets load in Ruby buffers, its RSpec snippets in `_spec.rb` files only.
 
 Vim's Ruby and shell indent scripts need the regex syntax to leave strings and heredocs alone, so those filetypes keep it loaded under tree-sitter; `=` never changes a string's value. For shell, `gQ` (shfmt) is still the better reindent.
 
@@ -81,12 +85,12 @@ Editing helpers for both:
 
 | Keys | Action |
 | --- | --- |
-| `ao` / `io` | Block, conditional or loop (`do ... end`, `{ }`, shell `if`/`for`/`while`) |
-| `ac` / `ic` | Class |
+| `ao` / `io` | Block, conditional or loop (`do ... end`, `{ }`, Ruby `if`/`case`/`while` and modifiers, shell `if`/`for`/`while`) |
+| `ac` / `ic` | Class (Ruby's `aM` / `iM` too) |
 | `van` / `vin` | Grow / shrink the selection along the syntax tree (`aN`/`iN` are mini.ai's "next") |
-| `gS` (Ruby) | Split/join blocks, modifier conditionals and literals (treesj) |
+| `gS` (Ruby) | Split/join blocks, modifier conditionals and literals (treesj; split hashes and arrays end without a comma) |
 | `<Space>fp` (Ruby) | Pick one of the project's gems and open its directory |
-| `<Space>ii` | Open the REPL: irb under the project's Ruby, python3, or the shell |
+| `<Space>ii` | Open the REPL: irb under the project's Ruby (with its bundle loaded), python3, or the shell |
 | `<Space>il` / `<Space>ip` | Send the line / paragraph to the REPL |
 | `<Space>i` (visual) | Send the selection to the REPL |
 
@@ -113,7 +117,7 @@ lua/mini.lua         mini.nvim modules
 lua/training.lua     motion training tools and coaching toggles
 lua/workflow.lua     test runners and source/test navigation
 lua/debugging.lua    DAP adapters and shared debugging mappings
-lua/ruby_tools.lua   Ruby style, lint ownership, test lenses, gems picker
+lua/ruby_tools.lua   Ruby servers, style, lint, quick fixes, on-type edits, test lenses, gems
 lua/rust_tools.lua   rust-analyzer run/debug lenses
 lua/lenses.lua       shared code lens commands
 lua/formatexpr.lua   gq: format code, wrap prose and comments
@@ -123,6 +127,7 @@ lua/theme.lua        colorscheme and highlights
 lua/treesitter.lua   Tree-sitter setup
 lua/lsp.lua          native LSP setup
 .stylua.toml         Lua formatting policy
+ruby/                patch the ruby-lsp launcher loads
 scripts/             helper scripts
 snippets/            personal snippets
 spell/               spell dictionaries
@@ -218,7 +223,8 @@ value inspection, and stepping. The debug selector also accepts `ruby_bundle`,
 toolchain and adapter. The language and editing checks load the full config
 against temporary fixtures (the loop above fails instead of hanging on an error).
 Language checks cover Ruby and shell: style and lint ownership, test lenses,
-ruby-lsp and bashls settings, shfmt style, shell snippets, text objects, treesj,
-injections, the REPL, and indentation that keeps string bodies. Editing checks
+the merge of ruby-lsp's and Solargraph's answers, ruby-lsp and bashls settings,
+shfmt style, shell snippets, text objects, treesj, injections, the REPL, and
+indentation that keeps string bodies. Editing checks
 cover the rest: mappings, `gq`, folds, spell lists, filetypes, the language
 servers' settings, formatters and the code lens commands.
