@@ -139,6 +139,17 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     callback = syntax_style,
 })
 
+local function gutter_marks_hl()
+    local cyan = vim.g.terminal_color_6 or "#5AD4E6"
+    vim.api.nvim_set_hl(0, "GutterMarksLocal", { fg = cyan })
+    vim.api.nvim_set_hl(0, "GutterMarksGlobal", { fg = cyan })
+end
+gutter_marks_hl()
+vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("hvpaiva-gutter-marks-hl", { clear = true }),
+    callback = gutter_marks_hl,
+})
+
 -- Colorize the `--MODE--` indicator in the cmdline (showmode) per mode.
 -- The default `ModeMsg` highlight is a flat gray; we rewrite it on every
 -- `ModeChanged` so Insert/Visual/Replace etc. each get a distinct color.

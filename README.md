@@ -108,6 +108,8 @@ Editing helpers for both:
 
 The quickfix list is editable (quicker.nvim): change lines and `:w` to apply them to the files, `>` / `<` to show or hide context. Markdown spell checking builds its programming and personal word lists by itself (from vim-dirtytalk and `spell/custom.words`) and downloads missing languages without asking.
 
+Diagnostics show in the sign column as a dot in their severity's color; marks `a`–`z` and `A`–`Z` show their letter there in the theme's cyan (guttermarks.nvim), except on a line that also has a diagnostic.
+
 ## Structure
 
 ```text

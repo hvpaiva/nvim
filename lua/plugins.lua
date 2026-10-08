@@ -38,6 +38,7 @@ vim.pack.add({
     "https://github.com/Wansmer/treesj",
     "https://github.com/stevearc/quicker.nvim",
     "https://github.com/b0o/SchemaStore.nvim",
+    "https://github.com/dimtion/guttermarks.nvim",
 })
 
 -- Interactive training games stay managed by vim.pack, but their `plugin/`
@@ -61,6 +62,11 @@ vim.g.undotree_SplitWidth = 32
 vim.g.undotree_DiffpanelHeight = 12
 vim.g.undotree_DiffAutoOpen = 1
 vim.g.undotree_SetFocusWhenToggle = 1
+
+require("guttermarks").setup({
+    local_mark = { priority = 9 },
+    global_mark = { priority = 9 },
+})
 
 -- conform.nvim: per-filetype formatters. Ruby is project-detected (Standard vs
 -- RuboCop, see lua/ruby_tools.lua, which linting follows too). Rust, Haskell

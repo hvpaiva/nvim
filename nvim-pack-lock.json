@@ -20,6 +20,10 @@
       "rev": "6cd7280adead7f586db6fccbd15d2cac7e2188b9",
       "src": "https://github.com/rafamadriz/friendly-snippets"
     },
+    "guttermarks.nvim": {
+      "rev": "50088f99c2e978afe7f8e339e98b397babc7cbd2",
+      "src": "https://github.com/dimtion/guttermarks.nvim"
+    },
     "hardtime.nvim": {
       "rev": "b4e431934af1fe224a3a801f632c008278cb7628",
       "src": "https://github.com/m4xshen/hardtime.nvim"

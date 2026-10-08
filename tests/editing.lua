@@ -93,6 +93,37 @@ check(vim.fn.maparg("an", "x", false, true).desc == "Select parent (outer) node"
 check(vim.fn.maparg("in", "x", false, true).desc == "Select child (inner) node", "visual in is incremental selection")
 check(not vim.tbl_isempty(vim.fn.maparg("aN", "x", false, true)), "mini.ai next text objects on aN/iN")
 
+scratch({ "marked", "flagged" }, "text")
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+feed("ma")
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+feed("mb")
+vim.diagnostic.set(vim.api.nvim_create_namespace("signs-test"), 0, {
+    { lnum = 1, col = 0, message = "hint", severity = vim.diagnostic.severity.HINT },
+})
+vim.wait(200)
+local function shown_sign(row)
+    local best
+    for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(0, -1, { row, 0 }, { row, -1 }, { details = true })) do
+        local details = mark[4]
+        if details.sign_text and (not best or details.priority > best.priority) then
+            best = details
+        end
+    end
+    return best and vim.trim(best.sign_text)
+end
+check(shown_sign(0) == "a", "a mark shows its letter: " .. tostring(shown_sign(0)))
+check(shown_sign(1) == "●", "a diagnostic outranks a mark: " .. tostring(shown_sign(1)))
+if vim.g.colors_name then
+    vim.cmd.colorscheme(vim.g.colors_name)
+end
+local cyan = (vim.g.terminal_color_6 or "#5AD4E6"):lower()
+for _, group in ipairs({ "GutterMarksLocal", "GutterMarksGlobal" }) do
+    local fg = vim.api.nvim_get_hl(0, { name = group }).fg
+    local shown = fg and string.format("#%06x", fg)
+    check(shown == cyan, group .. " is cyan after a colorscheme load: " .. tostring(shown) .. " vs " .. cyan)
+end
+
 -- gq: code formats, prose and comments wrap ----------------------------------
 local long = string.rep("word ", 30)
 local dir = temporary .. "/format"
