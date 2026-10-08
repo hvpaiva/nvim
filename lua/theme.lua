@@ -119,6 +119,26 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     callback = snippet_hl,
 })
 
+-- Syntax styles on top of any colorscheme: the keyword that declares a
+-- function (`def`, `fn`, `func`) in italic like the other keywords, and
+-- function names without bold.
+local function syntax_style()
+    local keyword = vim.api.nvim_get_hl(0, { name = "@keyword.function", link = false })
+    keyword.italic = true
+    vim.api.nvim_set_hl(0, "@keyword.function", keyword)
+    local fn = vim.api.nvim_get_hl(0, { name = "Function", link = false })
+    fn.bold = nil
+    if fn.cterm then
+        fn.cterm.bold = nil
+    end
+    vim.api.nvim_set_hl(0, "Function", fn)
+end
+syntax_style()
+vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("hvpaiva-syntax-style", { clear = true }),
+    callback = syntax_style,
+})
+
 -- Colorize the `--MODE--` indicator in the cmdline (showmode) per mode.
 -- The default `ModeMsg` highlight is a flat gray; we rewrite it on every
 -- `ModeChanged` so Insert/Visual/Replace etc. each get a distinct color.
