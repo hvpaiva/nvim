@@ -33,4 +33,15 @@ if [[ ! -x $bindir/ruby-lsp ]]; then
     exec 9>&-
 fi
 
+# ruby/ruby_lsp_fresh_parse.rb makes each request see the changes sent before
+# it. RUBYOPT reaches the server through the `bundle exec` ruby-lsp re-runs
+# itself under; it splits on whitespace, so a path with spaces goes without.
+self=$(readlink -f "$0") || exit 1
+patch=${self%/*}/../ruby/ruby_lsp_fresh_parse.rb
+if [[ $patch == *[[:space:]]* ]]; then
+    printf 'nvim-ruby-lsp: %s has spaces, starting without it\n' "$patch" >&2
+else
+    export RUBYOPT="-r$patch${RUBYOPT:+ $RUBYOPT}"
+fi
+
 exec "$bindir/ruby-lsp" "$@"
