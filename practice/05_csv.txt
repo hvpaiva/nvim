@@ -1,0 +1,22 @@
+05. Transform whole lines. The goal is for each line of the block below, like
+ana,ana@example.com,admin, to become ["ana", "ana@example.com", "admin"],
+
+Do it one way, `:e!`, and do it another way.
+
+1. With a substitution. Cursor in the block, `vip`, then
+   :'<,'>s/\v([^,]+),([^,]+),(.+)/["\1", "\2", "\3"],/
+   The preview shows in a split while you type.
+
+2. With a macro. Cursor on the first line of the block,
+   `qa` `0i["` `<Esc>` `f,` `s", "` `<Esc>` `;` `s", "` `<Esc>` `A"],` `<Esc>` `j0` `q`,
+   then `3@a`.
+
+3. With :normal on each line. `vip`, then
+   :'<,'>normal I["
+   and so on. Useful when the edit is easier to type than to describe in a
+   regex.
+
+ana,ana@example.com,admin
+bruno,bruno@example.com,editor
+carla,carla@example.com,viewer
+diego,diego@example.com,editor

@@ -6,6 +6,7 @@ end
 require("workflow")
 require("debugging")
 require("training")
+local practice = require("practice")
 vim.cmd("filetype plugin on")
 
 local temporary = vim.fn.tempname()
@@ -273,6 +274,42 @@ for _, ft in ipairs({
 end
 check(vim.fn.maparg(" rr", "n", false, true).callback == require("dap").continue, "language-independent debug binding")
 check(vim.fn.maparg(" d", "n") == "", "workflow does not claim the delete prefix")
+
+local copy = temporary .. "/practice"
+local function in_copy(...)
+    return vim.trim(vim.system({ "git", "-C", copy, ... }, { text = true }):wait().stdout)
+end
+check(vim.fn.exists(":Practice") == 2, "practice command")
+practice.open({ copy = copy })
+check(vim.api.nvim_buf_get_name(0) == copy .. "/00_README.md", "practice opens its README")
+check(in_copy("rev-list", "--count", "HEAD") == "1", "the practice copy starts as one commit")
+check(in_copy("status", "--porcelain") == "", "the first practice commit holds every file")
+check(
+    vim.deep_equal(vim.fn.readfile(copy .. "/01_motions.rb"), vim.fn.readfile(practice.source .. "/01_motions.rb")),
+    "the practice copy matches its source"
+)
+vim.cmd.cd(copy)
+vim.cmd.edit("01_motions.rb")
+local motions = vim.api.nvim_get_current_buf()
+local first_line = vim.api.nvim_buf_get_lines(motions, 0, 1, false)[1]
+vim.api.nvim_buf_set_lines(motions, 0, 1, false, { "saved" })
+vim.cmd.write()
+write(copy .. "/draft.rb", "draft")
+vim.cmd.edit("draft.rb")
+local draft = vim.api.nvim_get_current_buf()
+practice.open({ copy = copy })
+check(vim.fn.readfile(copy .. "/01_motions.rb")[1] == "saved", "practice keeps progress without a reset")
+vim.api.nvim_buf_set_lines(motions, 1, 2, false, { "unsaved" })
+practice.open({ copy = copy, reset = true })
+check(vim.fn.readfile(copy .. "/01_motions.rb")[1] == first_line, "a reset restores the files")
+check(vim.fn.filereadable(copy .. "/draft.rb") == 0, "a reset removes added files")
+check(not vim.api.nvim_buf_is_valid(draft), "a reset drops the buffers of removed files")
+check(
+    vim.api.nvim_buf_get_lines(motions, 0, 1, false)[1] == first_line and not vim.bo[motions].modified,
+    "a reset reloads open buffers"
+)
+check(vim.fn.filereadable("00_README.md") == 1, "a reset inside the copy leaves a working directory")
+check(in_copy("rev-list", "--count", "HEAD") == "1", "a reset starts a new repository")
 
 vim.cmd.cd(vim.fn.stdpath("config"))
 vim.cmd("%bwipeout!")

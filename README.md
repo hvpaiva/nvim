@@ -121,6 +121,7 @@ lua/keymaps.lua      mappings
 lua/plugins.lua      plugin list and non-mini setup
 lua/mini.lua         mini.nvim modules
 lua/training.lua     motion training tools and coaching toggles
+lua/practice.lua     :Practice, a throwaway copy of practice/ to work through
 lua/workflow.lua     test runners and source/test navigation
 lua/debugging.lua    DAP adapters and shared debugging mappings
 lua/ruby_tools.lua   Ruby servers, style, lint, quick fixes, on-type edits, test lenses, gems
@@ -133,6 +134,7 @@ lua/theme.lua        colorscheme and highlights
 lua/treesitter.lua   Tree-sitter setup
 lua/lsp.lua          native LSP setup
 .stylua.toml         Lua formatting policy
+practice/            exercises for this config, one subject per file
 ruby/                patch the ruby-lsp launcher loads
 scripts/             helper scripts
 snippets/            personal snippets
@@ -152,6 +154,14 @@ that is no longer useful.
 `<Space>pa` to analyse motions, `<Space>pb` for VimBeBetter, `<Space>pT` for
 VimTeacher, `<Space>ph` for a movement hint, `<Space>pH` to toggle hints,
 `<Space>pd` to toggle Hardtime, and `<Space>pr` for its report.
+
+`practice/` holds exercises for this config: one file per subject, each
+exercise a comment right above the code it acts on. `:Practice` opens a copy of
+it in `~/.local/state/nvim/practice`, made a git repository of its own with one
+commit, so the exercises can edit, rename, commit and amend without touching
+this repository; it keeps the copy between sessions. `:Practice!` replaces the
+copy with a fresh one and reloads the buffers open on it. Exercises are changed
+in `practice/`, next to the config they teach.
 
 ## Tests and navigation
 
@@ -223,7 +233,8 @@ done
 ```
 
 The workflow checks use temporary fixtures and capture commands without running
-project tests. Debugging checks launch temporary programs and verify a breakpoint,
+project tests; they also create and reset a practice copy in a temporary
+directory. Debugging checks launch temporary programs and verify a breakpoint,
 value inspection, and stepping. The debug selector also accepts `ruby_bundle`,
 `go`, `rust`, `python`, `javascript`, `typescript`, and `bash`; each requires its
 toolchain and adapter. The language and editing checks load the full config
