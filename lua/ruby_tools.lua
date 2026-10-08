@@ -95,20 +95,27 @@ function M.lint_plan(filename)
 end
 
 -- The project's binstub, then `bundle exec` when the lockfile has the gem, then
--- the tool on PATH. Returns command, leading args, working directory.
+-- the tool on PATH, under the Ruby the project selects (`mise x` from its
+-- directory, as for ruby-lsp). Returns command, leading args, working
+-- directory.
 local function resolve(filename, executable, gem)
     local root = M.bundle_root(filename)
+    local argv = { executable }
     if root then
         local binstub = root .. "/bin/" .. executable
         if vim.fn.executable(binstub) == 1 then
-            return binstub, {}, root
-        end
-        local lock = M.lock(root)
-        if lock and lock.all[gem] then
-            return "bundle", { "exec", executable }, root
+            argv = { binstub }
+        else
+            local lock = M.lock(root)
+            if lock and lock.all[gem] then
+                argv = { "bundle", "exec", executable }
+            end
         end
     end
-    return executable, {}, root or vim.fs.dirname(filename)
+    if vim.fn.executable("mise") == 1 then
+        argv = vim.list_extend({ "mise", "x", "--" }, argv)
+    end
+    return argv[1], vim.list_slice(argv, 2), root or vim.fs.dirname(filename)
 end
 
 -- `rubocop --server` (conform's and nvim-lint's default) leaves a daemon per
@@ -136,8 +143,16 @@ function M.stop_servers()
 end
 
 --- conform formatter spec for a Ruby formatter resolved per buffer.
+--- `--fix-layout` limits it to the Layout cops: formatting changes whitespace
+--- and line breaks, never the code (`$stderr.puts` to `warn`, a dropped
+--- `return`); those corrections stay diagnostics.
 function M.formatter(executable, gem)
+    local layout_args = { "--fix-layout", "-f", "quiet", "--stderr", "--stdin", "$FILENAME" }
+    if executable == "rubocop" then
+        table.insert(layout_args, 1, "--server")
+    end
     return {
+        args = layout_args,
         command = function(_, ctx)
             local command, args, cwd = resolve(ctx.filename, executable, gem)
             if executable == "rubocop" then
@@ -178,6 +193,17 @@ local function report(output)
     error("no report from the linter", 0)
 end
 
+-- ruby-lsp's severities for RuboCop offenses, so a cop reads the same with or
+-- without a bundle.
+local severities = {
+    info = vim.diagnostic.severity.HINT,
+    refactor = vim.diagnostic.severity.INFO,
+    convention = vim.diagnostic.severity.INFO,
+    warning = vim.diagnostic.severity.WARN,
+    error = vim.diagnostic.severity.ERROR,
+    fatal = vim.diagnostic.severity.ERROR,
+}
+
 --- nvim-lint linter for `name` ("standardrb" or "rubocop"), resolved for the
 --- current buffer the same way the formatter is.
 function M.linter(name)
@@ -188,17 +214,29 @@ function M.linter(name)
         if name == "rubocop" then
             track_server(command, prefix, cwd)
         end
+        local changedtick = vim.b.changedtick
         return vim.tbl_extend("force", base, {
             cmd = command,
             args = vim.list_extend(vim.deepcopy(prefix), base.args),
             ignore_exitcode = true,
             stream = "both",
             -- nvim-lint's standardrb parser leaves `source` empty; label both
-            -- like ruby-lsp labels its RuboCop diagnostics.
+            -- like ruby-lsp labels its RuboCop diagnostics. Each diagnostic
+            -- also keeps `correctable` and the buffer's changedtick when it
+            -- was linted, for the code actions below (both parsers keep the
+            -- report's offense order).
             parser = function(output, ...)
-                local diagnostics = base.parser(report(output), ...)
-                for _, diagnostic in ipairs(diagnostics) do
+                local json = report(output)
+                local offenses = vim.tbl_get(vim.json.decode(json), "files", 1, "offenses") or {}
+                local diagnostics = base.parser(json, ...)
+                for i, diagnostic in ipairs(diagnostics) do
+                    local offense = offenses[i] or {}
                     diagnostic.source = diagnostic.source or name
+                    diagnostic.severity = severities[offense.severity] or diagnostic.severity
+                    diagnostic.user_data = vim.tbl_extend("force", diagnostic.user_data or {}, {
+                        correctable = offense.correctable or false,
+                        changedtick = changedtick,
+                    })
                 end
                 return diagnostics
             end,
