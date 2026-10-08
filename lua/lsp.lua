@@ -18,6 +18,38 @@ vim.diagnostic.config({
     },
 })
 
+local function inserts_before_replacements(text_edits)
+    local ordered = {}
+    for index, edit in ipairs(text_edits) do
+        ordered[index] = { edit = edit, index = index }
+    end
+    local function is_insert(edit)
+        return vim.deep_equal(edit.range.start, edit.range["end"])
+    end
+    table.sort(ordered, function(a, b)
+        local sa, sb = a.edit.range.start, b.edit.range.start
+        if sa.line ~= sb.line then
+            return sa.line < sb.line
+        end
+        if sa.character ~= sb.character then
+            return sa.character < sb.character
+        end
+        local ia, ib = is_insert(a.edit), is_insert(b.edit)
+        if ia ~= ib then
+            return ia
+        end
+        return a.index < b.index
+    end)
+    return vim.tbl_map(function(entry)
+        return entry.edit
+    end, ordered)
+end
+
+local apply_text_edits = vim.lsp.util.apply_text_edits
+vim.lsp.util.apply_text_edits = function(text_edits, ...)
+    return apply_text_edits(inserts_before_replacements(text_edits or {}), ...)
+end
+
 -- mini.completion already extends the default client capabilities with the
 -- completion/signature features it implements, so use the result directly.
 vim.lsp.config("*", { capabilities = require("mini.completion").get_lsp_capabilities() })

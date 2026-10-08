@@ -656,6 +656,27 @@ check(
     #completed == 2 and completed[1].client_id == rl_client,
     "Solargraph's completion adds only names ruby-lsp lacks: " .. vim.inspect(completed)
 )
+local extracted = vim.api.nvim_create_buf(false, true)
+vim.api.nvim_buf_set_lines(extracted, 0, -1, false, { "  price * quantity + 100" })
+local function edit(first, last, text)
+    return {
+        range = { start = { line = 0, character = first }, ["end"] = { line = 0, character = last } },
+        newText = text,
+    }
+end
+vim.lsp.util.apply_text_edits(
+    { edit(2, 18, "new_variable"), edit(2, 2, "new_variable = price * quantity\n  ") },
+    extracted,
+    "utf-8"
+)
+check(
+    vim.deep_equal(
+        vim.api.nvim_buf_get_lines(extracted, 0, -1, false),
+        { "  new_variable = price * quantity", "  new_variable + 100" }
+    ),
+    "an insert lands before a replacement that starts with it: "
+        .. vim.inspect(vim.api.nvim_buf_get_lines(extracted, 0, -1, false))
+)
 sg:stop(true)
 rl:stop(true)
 vim.bo.modified = false

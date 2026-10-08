@@ -50,6 +50,8 @@ This installs language servers (`rust-analyzer`, `gopls`, `lua-language-server`,
 
 Code lenses and on-type formatting come only from the servers whose lenses `gl` can act on and whose as-you-type edits are the point: ruby-lsp (tests, `end` insertion), rust-analyzer (run, debug, references), terraform-ls (references) and gopls (`go.mod` and `go:generate` commands). Elsewhere they would only add "N references" noise or reformat lines against the project formatter.
 
+Edits a server sends are applied with any insertion placed before a replacement that starts at the same spot, as the LSP specification orders them; ruby-lsp's Extract Variable sends them the other way round, which Neovim would apply over the shifted text.
+
 `gq{motion}` formats code through Conform, and wraps text in prose (Markdown, commit messages, plain text), in comment-only ranges and wherever nothing formats; `gQ` formats the whole buffer; `gw` always wraps.
 
 The script also installs GHC and HLS through the `mise-ghcup` backend, plus Cabal, Stack, Ormolu, HLint, and `cabal-gild` through mise. It registers the backend, enables mise's experimental backend support, and selects `latest` for these Haskell tools.
