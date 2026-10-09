@@ -17,7 +17,7 @@ through the files in order, opening each one with `<Space>ff`.
 | `08_syntax.rb` | live syntax errors |
 | `lib/calculator.rb` + `test/calculator_test.rb` | vim-test, alternate files, test code lenses, debugging with rdbg |
 | `10_repl.rb` | irb on the side, sending a line, a paragraph and a selection |
-| `11_markdown.md` | spell, words with `-`, links with surround, sorting, colors, folds by heading, rendering |
+| `11_markdown.md` | spell, prose wrapping, words with `-`, links with surround, tables, sorting, colors, folds by heading, rendering |
 | `12_shell.sh` | jq and awk highlighted inside shell, automatic chmod |
 | `13_files_and_windows.md` | Oil, pickers, editable quickfix, buffers, windows, sessions, visits |
 | `14_git.md` | Fugitive, mini.diff, hunks, git pickers |
