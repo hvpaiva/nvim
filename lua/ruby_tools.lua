@@ -227,7 +227,14 @@ function M.linter(name)
             -- report's offense order).
             parser = function(output, ...)
                 local json = report(output)
-                local offenses = vim.tbl_get(vim.json.decode(json), "files", 1, "offenses") or {}
+                local file = vim.tbl_get(vim.json.decode(json), "files", 1)
+                -- `--force-exclusion` honours the config's ignore list even
+                -- on stdin, and an ignored file yields an empty report that
+                -- the stock parsers index blindly.
+                if not file then
+                    return {}
+                end
+                local offenses = file.offenses or {}
                 local diagnostics = base.parser(json, ...)
                 for i, diagnostic in ipairs(diagnostics) do
                     local offense = offenses[i] or {}

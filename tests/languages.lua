@@ -140,6 +140,8 @@ local lint_dir = project("lint", {
     ["offense.rb"] = "def f(x)\n  return x\nend",
     ["broken/a.rb"] = "def f(x)\n  return x\nend",
     ["broken/.standard.yml"] = "ruby_version: [not valid",
+    ["ignored/skip/a.rb"] = "def f(x)\n  return x\nend",
+    ["ignored/.standard.yml"] = 'ignore:\n  - "skip/**/*"',
 })
 local notified = {}
 local notify = vim.notify
@@ -159,6 +161,11 @@ check(offense[1].severity == vim.diagnostic.severity.INFO, "a convention cop is 
 local failure = linted("broken/a.rb")
 check(failure[1] and failure[1].severity == vim.diagnostic.severity.ERROR, "a failing linter shows an error")
 check(failure[1] and failure[1].message:find("Output from linter", 1, true), "with the linter's own output")
+vim.cmd.edit(vim.fn.fnameescape(lint_dir .. "/ignored/skip/a.rb"))
+vim.wait(15000, function()
+    return #require("lint").get_running(0) == 0
+end, 100)
+check(#vim.diagnostic.get(0) == 0, "a file the config ignores lints clean instead of failing the parser")
 vim.wait(500)
 vim.notify = notify
 check(#notified == 0, "no exit-code notifications: " .. table.concat(notified, " | "))
